@@ -2,64 +2,14 @@
 
 * [Welcome](README.md)
 
-## ✈️ Exposed Services
+## 🔎 Labs
 
-* [DNS 53](exposed-services/dns-53.md)
-* [KRB 88](exposed-services/krb-88.md)
-* [LDAP](exposed-services/ldap.md)
-* [SMB 139,445](exposed-services/smb-139-445.md)
-* [SNMP 161](exposed-services/snmp-161.md)
-* [MSSQL](exposed-services/mssql.md)
-* [NFS 2049](exposed-services/nfs-2049.md)
+* [CRTP Lab](labs/crtp-lab.md)
 
-## 🕸️ Web
+## 📃 Exams
 
-* [Page 2](web/page-2.md)
+* [Page 2](exams/page-2.md)
 
-## 🪟 Windows
+## 🎮 CTF
 
-* [Active Directory](windows/active-directory/README.md)
-  * [Enumeration](windows/active-directory/enumeration/README.md)
-    * [Domain Information](windows/active-directory/enumeration/domain-information.md)
-    * [BloodHound](windows/active-directory/enumeration/bloodhound.md)
-    * [User Hunting](windows/active-directory/enumeration/user-hunting.md)
-  * [Lateral Movement](windows/active-directory/lateral-movement.md)
-    * [Pass The \*](windows/active-directory/lateral-movement/pass-the/README.md)
-      * [Pass The Hash](windows/active-directory/lateral-movement/pass-the/pass-the-hash.md)
-      * [Pass The Ticket](windows/active-directory/lateral-movement/pass-the/pass-the-ticket.md)
-      * [Pass The Cert](windows/active-directory/lateral-movement/pass-the/pass-the-cert.md)
-    * [Open other sessions](windows/active-directory/lateral-movement/open-other-sessions.md)
-    * [File transfer](windows/active-directory/lateral-movement/file-transfer.md)
-  * [Exploitation / Abuse](windows/active-directory/exploitation-abuse.md)
-    * [Groups](windows/active-directory/exploitation-abuse/groups.md)
-    * [DACL](windows/active-directory/exploitation-abuse/dacl/README.md)
-      * [DCSync](windows/active-directory/exploitation-abuse/dacl/dcsync.md)
-      * [GenericALL](windows/active-directory/exploitation-abuse/dacl/genericall.md)
-      * [Delegations](windows/active-directory/exploitation-abuse/dacl/delegations.md)
-      * [Trust](windows/active-directory/exploitation-abuse/dacl/trust.md)
-    * [Mimi Tools](windows/active-directory/exploitation-abuse/mimi-tools.md)
-    * [ADCS](windows/active-directory/exploitation-abuse/adcs/README.md)
-      * [ESC1](windows/active-directory/exploitation-abuse/adcs/esc1.md)
-      * [ESC3](windows/active-directory/exploitation-abuse/adcs/esc3.md)
-      * [ESC4](windows/active-directory/exploitation-abuse/adcs/esc4.md)
-      * [ESC6](windows/active-directory/exploitation-abuse/adcs/esc6.md)
-* [Persistence](windows/active-directory/persistence.md)
-  * [Ticket Forging](windows/persistence/ticket-forging.md)
-  * [ACLs](windows/persistence/acls.md)
-* [Local](windows/local/README.md)
-  * [Enumeration](windows/local/enumeration.md)
-  * [Privescs](windows/local/privescs/README.md)
-    * [Privileges](windows/local/privescs/privileges.md)
-    * [Groups](windows/local/privescs/groups.md)
-    * [Weak Registry Permissions](windows/local/privescs/weak-registry-permissions.md)
-    * [Services Misconfiguration](windows/local/privescs/services-misconfiguration.md)
-  * [Download Files](windows/local/download-files.md)
-* [Evasion](windows/evasion.md)
-
-## 🐧 Linux
-
-* [Page 4](linux/page-4.md)
-
-## 📃 Write Ups
-
-* [CRTP Lab](write-ups/crtp-lab.md)
+* [Page 3](ctf/page-3.md)
