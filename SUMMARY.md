@@ -8,7 +8,8 @@
 
 ## 📃 Exams
 
-* [Page 2](exams/page-2.md)
+* [CRTP](exams/crtp.md)
+* [NHA](exams/nha.md)
 
 ## 🎮 CTF
 
