@@ -4,6 +4,7 @@
 
 ## 🔎 Labs
 
+* [CRTE Lab](labs/crte-lab.md)
 * [CRTP Lab](labs/crtp-lab.md)
 
 ## 📃 Exams
