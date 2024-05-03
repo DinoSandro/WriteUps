@@ -1032,7 +1032,7 @@ and use it to ask for a tgt
 
 <figure><img src="../.gitbook/assets/immagine (36).png" alt=""><figcaption></figcaption></figure>
 
-## Flag 40 - Kerberoasting on another domain
+## Flag 40/41/42 - Kerberoasting on another domain
 
 Launch invishell and us ad-module to find kerberoastable account
 
