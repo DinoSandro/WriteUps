@@ -14,4 +14,4 @@
 
 ## 🎮 CTF
 
-* [Page 3](ctf/page-3.md)
+* [Dante](ctf/dante.md)
