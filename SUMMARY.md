@@ -15,3 +15,4 @@
 ## 🎮 CTF
 
 * [Dante](ctf/dante.md)
+* [OffShore](ctf/offshore.md)
