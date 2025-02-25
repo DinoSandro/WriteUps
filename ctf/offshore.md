@@ -26,7 +26,7 @@ in the port :8000 we can see the splunk web app.&#x20;
 
 [https://www.n00py.io/2018/10/popping-shells-on-splunk/](https://www.n00py.io/2018/10/popping-shells-on-splunk/)
 
-Upload the splunk shell from [https://github.com/TBGSecurity/splunk\_shells](https://github.com/TBGSecurity/splunk\_shells)
+Upload the splunk shell from [https://github.com/TBGSecurity/splunk\_shells](https://github.com/TBGSecurity/splunk_shells)
 
 <figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
 
@@ -140,11 +140,11 @@ now add  an account that we control to the local administrator group
 
 Logout and reconnect to refresh the privileges. Dump creds with mimikatz
 
-| User    | Password                                                                                                                  | hash                             |
-| ------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| WSADM$  | M9f,Dzf_5tM9>'BjGhH`;KETEKLcQ;K&NQg/gGRGSJFs'Np\ah%(OB^aXLjNa[1eB"a>+U^<z`j'Ca"TZV=fm+BBDW\&t/?0Hm)R>)ZkcswFkz:8PQFp_b!>4 | 19f221a69c0693ebfdc064393b55d509 |
-| wsadmin | Workstationadmin1!                                                                                                        | 669b12a3bac275251170afbe2c5de8c2 |
-|         |                                                                                                                           |                                  |
+| User    | Password                                                                                                                                      | hash                             |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| WSADM$  | M9f,Dz&#x66;_&#x35;tM9>'BjGhH`;KETEKLcQ;K&NQg/gGRGSJFs'Np\ah%(OB^aXLjNa[1eB"a>+U^<z`j'Ca"TZV=fm+BBDW\&t/?0Hm)R>)ZkcswFkz:8PQF&#x70;_&#x62;!>4 | 19f221a69c0693ebfdc064393b55d509 |
+| wsadmin | Workstationadmin1!                                                                                                                            | 669b12a3bac275251170afbe2c5de8c2 |
+|         |                                                                                                                                               |                                  |
 
 
 

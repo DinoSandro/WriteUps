@@ -19,4 +19,5 @@
 
 ## OffSec
 
-* [Secura](offsec/secura.md)
+* [Relia](offsec/relia.md)
+* [OSCP A](offsec/oscp-a.md)
