@@ -592,7 +592,7 @@ On the new spawned process run invishell and use Find-PSRemotingLocalAdminAccess
 Find-PSRemotingLocalAdminAccess -Domain us.techcorp.local -Verbose
 ```
 
-<figure><img src="../.gitbook/assets/image (1) (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (1) (1) (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 Now, we will use the printer bug to force us-dc to connect to us-web.&#x20;
 

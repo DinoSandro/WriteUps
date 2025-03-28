@@ -20,7 +20,7 @@ Scan the ports
 nmap -Pn -sT -sV -T5 10.10.110.123 -p-
 ```
 
-<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
 
 in the port :8000 we can see the splunk web app.&#x20;
 
@@ -28,7 +28,7 @@ in the port :8000 we can see the splunk web app.&#x20;
 
 Upload the splunk shell from [https://github.com/TBGSecurity/splunk\_shells](https://github.com/TBGSecurity/splunk_shells)
 
-<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 Postgres is listening
 

